@@ -18,12 +18,58 @@
   var modalSub = document.getElementById("gameOverSubtitle");
   var playAgainBtn = document.getElementById("playAgainBtn");
 
+  var pad = document.getElementById("pad");
+  var padUp = document.getElementById("padUp");
+  var padDown = document.getElementById("padDown");
+
   var panel = null;
 
   var HINTS = {
-    solo: "Scroll the wheel over the board to move your paddle. Keep the ball alive — three misses and it's over.",
-    cpu:  "Scroll the wheel over the board to move the green paddle. First to three points wins."
+    solo: "Hold ▲ / ▼ to move your paddle, or scroll the wheel over the board. Keep the ball alive — three misses and it's over.",
+    cpu:  "Hold ▲ / ▼ to move the green paddle, or scroll the wheel over the board. First to three points wins."
   };
+
+  /* ------------------------------------------------------------ paddle pad
+
+     A phone has no wheel, so the buttons are the only way in on mobile; on a
+     desktop they sit alongside the wheel rather than replacing it. Holding one
+     sets a direction that the game loop applies on every 16ms tick, so the
+     paddle glides instead of stepping once per click.
+
+     Pointer events cover mouse, touch and pen in one path. The release is
+     bound on the window, not the button, because a finger or cursor that
+     slides off the button mid-hold would otherwise never deliver the "up"
+     and the paddle would run away on its own. */
+  function bindPaddleButton(button, direction) {
+    if (!button) return;
+
+    function press(e) {
+      e.preventDefault();
+      if (!panel) return;
+      panel.setHeld(direction);
+      button.classList.add("is-held");
+    }
+
+    function release() {
+      if (panel) panel.setHeld(0);
+      button.classList.remove("is-held");
+    }
+
+    button.addEventListener("pointerdown", press);
+    button.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+    window.addEventListener("pointerup", release);
+    window.addEventListener("pointercancel", release);
+    window.addEventListener("blur", release);
+
+    // Keyboard: the buttons are real <button>s, so Enter/Space reach them.
+    button.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") press(e);
+    });
+    button.addEventListener("keyup", release);
+  }
+
+  bindPaddleButton(padUp, -1);
+  bindPaddleButton(padDown, 1);
 
   function launch(mode) {
     if (panel) panel.destroy();
@@ -39,6 +85,7 @@
 
     attract.hidden = true;
     canvas.hidden = false;
+    pad.hidden = false;
     hint.textContent = HINTS[mode];
 
     modeBtns.forEach(function (b) {
@@ -55,6 +102,9 @@
   }
 
   function showGameOver(message) {
+    if (panel) panel.setHeld(0);
+    padUp.classList.remove("is-held");
+    padDown.classList.remove("is-held");
     modalTitle.textContent = message.title;
     modalSub.textContent = message.sub;
     modal.hidden = false;
