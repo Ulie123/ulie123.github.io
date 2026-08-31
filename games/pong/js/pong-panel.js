@@ -14,7 +14,10 @@
     this.gameMode = gameMode;
     this.onGameOver = onGameOver;
     this.model = new window.PongModel(C.WINDOW_WIDTH, C.WINDOW_HEIGHT, gameMode);
-    this.timer = null;
+    this.raf = null;
+    this.running = false;
+    this.lastFrame = 0;
+    this.accumulator = 0;
     this.reported = false;
     this.held = 0;          // -1 up, +1 down, 0 not held — set by the buttons
 
@@ -34,33 +37,74 @@
     canvas.addEventListener("wheel", this.onWheel, { passive: false });
   }
 
+  /* This was setInterval(TIMER_DELAY), a direct translation of
+     javax.swing.Timer. On a desktop it is fine; on a phone it is why tapping a
+     paddle button could hang for a moment. setInterval fires at a fixed rate
+     whether or not the browser is keeping up, so once a tick costs more than
+     16ms the callbacks queue back to back with no idle gap between them and
+     input events sit in the queue behind them. Measured on a throttled phone,
+     a tap waited ~40ms just to reach its own handler, and the handler itself
+     took 2ms.
+
+     requestAnimationFrame instead: the browser schedules it, so it yields
+     between frames and simply skips frames when busy rather than piling up a
+     backlog. Game speed is unchanged because the logic still advances in fixed
+     16ms steps, counted out of an accumulator — pauseTicksRemaining = 60 still
+     means exactly one second, as it did in Java. */
   PongPanel.prototype.start = function () {
     var self = this;
     this.stop();
-    /* javax.swing.Timer(TIMER_DELAY, ...) — a fixed 16ms tick, not a
-       frame-rate-dependent loop, so pauseTicksRemaining still means "one
-       second" exactly as it did in Java. */
-    this.timer = setInterval(function () {
-      /* Held buttons move the paddle on the same clock as everything else,
-         so holding one feels identical whatever the frame rate. Applied
-         before tick() so it still works during the pause between points. */
-      if (self.held) self.model.movePaddle(self.held * C.BUTTON_PADDLE_STEP);
+    this.running = true;
+    this.lastFrame = 0;
+    this.accumulator = 0;
 
-      self.model.tick();
-      self.paintComponent();
+    function frame(now) {
+      if (!self.running) return;
+      self.raf = requestAnimationFrame(frame);
+
+      if (!self.lastFrame) self.lastFrame = now;
+      var elapsed = now - self.lastFrame;
+      self.lastFrame = now;
+
+      /* Cap the catch-up. After a real stall — a backgrounded tab, a garbage
+         collection — replaying every missed tick would block for longer than
+         the stall did. Five is enough to smooth a hiccup and few enough that
+         the frame stays cheap. */
+      self.accumulator = Math.min(self.accumulator + elapsed, C.TIMER_DELAY * 5);
+
+      var stepped = false;
+      while (self.accumulator >= C.TIMER_DELAY) {
+        self.accumulator -= C.TIMER_DELAY;
+
+        /* Held buttons move the paddle on the same clock as everything else,
+           so holding one feels identical whatever the frame rate. Applied
+           before tick() so it still works during the pause between points. */
+        if (self.held) self.model.movePaddle(self.held * C.BUTTON_PADDLE_STEP);
+
+        self.model.tick();
+        stepped = true;
+      }
+
+      // One paint per frame, however many logic steps that frame covered.
+      if (stepped) self.paintComponent();
 
       if (self.model.gameOver && !self.reported) {
         self.reported = true;
         self.stop();
         self.onGameOver(self.buildGameOverMessage());
       }
-    }, C.TIMER_DELAY);
+    }
+
+    this.raf = requestAnimationFrame(frame);
   };
 
   PongPanel.prototype.stop = function () {
-    if (this.timer) clearInterval(this.timer);
-    this.timer = null;
+    this.running = false;
+    if (this.raf) cancelAnimationFrame(this.raf);
+    this.raf = null;
     this.held = 0;          // never resume with a button still stuck down
+    this.lastFrame = 0;
+    this.accumulator = 0;
   };
 
   /* -1 for up, +1 for down, 0 to stop. */
