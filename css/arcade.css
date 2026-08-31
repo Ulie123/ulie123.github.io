@@ -85,8 +85,12 @@ body {
     rgba(0, 0, 0, 0.28) 3px,
     rgba(0, 0, 0, 0.28) 4px
   );
-  opacity: 0.5;
-  mix-blend-mode: multiply;
+  /* No mix-blend-mode. A full-screen blended layer cannot be composited
+     independently, so every repaint underneath it — the game canvas, sixty
+     times a second — forced the whole viewport to be re-blended. Over a black
+     page multiply and normal look all but identical; the alpha below is
+     matched to what the blend used to produce. */
+  opacity: 0.42;
 }
 
 .bg-vignette {
