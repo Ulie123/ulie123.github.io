@@ -19,6 +19,13 @@
   /* 270px is the chrome above and below the playfield, paddle buttons
      included, so the whole cabinet clears a short window. */
   width: min(700px, 100%, calc((100vh - 270px) * 1.4));
+  /* svh, not vh, wherever it's supported. On a phone, tapping near the bottom
+     of the screen makes the browser's URL bar slide in or out, which changes
+     what 100vh means -- so the playfield was being resized and the whole page
+     relaid out mid-rally, right when you touched a paddle button. svh is
+     pinned to the viewport with the bar showing and doesn't move. The vh line
+     above stays as the fallback for browsers without svh. */
+  width: min(700px, 100%, calc((100svh - 270px) * 1.4));
 }
 
 #pong {
