@@ -18,5 +18,11 @@ window.GameConstants = Object.freeze({
   SOLO_SCORE_X:      30 + 20,
   SOLO_MISSES_X:     30 + 120,
   SCORE_Y:           20,
-  CPU_SCORE_OFFSET: 100
+  CPU_SCORE_OFFSET: 100,
+
+  /* Not in GameConstants.java. The Swing version had only a mouse wheel, so
+     it needed no held-button speed. Applied once per 16ms tick while a paddle
+     button is held down: 9px/tick is 1.5x the CPU paddle's 6, fast enough to
+     cross the court in about three quarters of a second. */
+  BUTTON_PADDLE_STEP: 9
 });
