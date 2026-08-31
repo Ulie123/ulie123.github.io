@@ -16,6 +16,7 @@
     this.model = new window.PongModel(C.WINDOW_WIDTH, C.WINDOW_HEIGHT, gameMode);
     this.timer = null;
     this.reported = false;
+    this.held = 0;          // -1 up, +1 down, 0 not held — set by the buttons
 
     canvas.width = C.WINDOW_WIDTH;
     canvas.height = C.WINDOW_HEIGHT;
@@ -40,6 +41,11 @@
        frame-rate-dependent loop, so pauseTicksRemaining still means "one
        second" exactly as it did in Java. */
     this.timer = setInterval(function () {
+      /* Held buttons move the paddle on the same clock as everything else,
+         so holding one feels identical whatever the frame rate. Applied
+         before tick() so it still works during the pause between points. */
+      if (self.held) self.model.movePaddle(self.held * C.BUTTON_PADDLE_STEP);
+
       self.model.tick();
       self.paintComponent();
 
@@ -54,6 +60,12 @@
   PongPanel.prototype.stop = function () {
     if (this.timer) clearInterval(this.timer);
     this.timer = null;
+    this.held = 0;          // never resume with a button still stuck down
+  };
+
+  /* -1 for up, +1 for down, 0 to stop. */
+  PongPanel.prototype.setHeld = function (direction) {
+    this.held = direction;
   };
 
   PongPanel.prototype.destroy = function () {
