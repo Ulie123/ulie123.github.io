@@ -16,7 +16,9 @@
    about 620px of window height it stays the full 700. */
 #pong,
 .attract {
-  width: min(700px, 100%, calc((100vh - 260px) * 1.4));
+  /* 270px is the chrome above and below the playfield, paddle buttons
+     included, so the whole cabinet clears a short window. */
+  width: min(700px, 100%, calc((100vh - 270px) * 1.4));
 }
 
 #pong {
@@ -85,4 +87,61 @@
   margin: 18px auto 0;
   max-width: 540px;
   line-height: 1.8;
+}
+
+/* --------------------------------------------------------------- paddle pad
+
+   The Swing original was mouse-wheel only, which leaves a phone with no way to
+   play at all. These do the same job by press-and-hold. Both input routes stay
+   live everywhere -- the wheel still works on a desktop, the buttons work with
+   a mouse too.
+   -------------------------------------------------------------------------- */
+
+.pong-pad {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.pong-pad[hidden] { display: none; }
+
+.pong-pad-btn {
+  font-family: var(--pixel);
+  font-size: 18px;
+  line-height: 1;
+  color: var(--neon);
+  background: #0b1a10;
+  border: 2px solid var(--neon-dim);
+  box-shadow: 0 3px 0 #051007;
+  /* Comfortably past the 44px minimum for a thumb. */
+  min-width: 108px;
+  min-height: 56px;
+  cursor: pointer;
+  /* Stops the browser scrolling the page, or firing a synthetic click after a
+     touch, while a button is being held. */
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.1s, border-color 0.1s, color 0.1s;
+}
+
+.pong-pad-btn:hover,
+.pong-pad-btn:focus-visible {
+  border-color: var(--neon);
+  color: var(--neon-hot);
+  outline: none;
+}
+
+.pong-pad-btn.is-held {
+  background: var(--neon);
+  color: #04140a;
+  border-color: var(--neon-hot);
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #051007;
+}
+
+@media (max-width: 560px) {
+  .pong-pad-btn { min-width: 0; flex: 1; }
 }
