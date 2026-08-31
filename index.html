@@ -83,23 +83,27 @@
     <article class="game-card">
       <svg class="card-icon" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
         <rect x="0" y="0" width="16" height="16" fill="#0b2a12"/>
+        <!-- Frame plus two dividers. The dividers are 2px wide, not 1px: a 1px
+             line left 7px on one side of it and 6px on the other, which is why
+             the right-hand and bottom cells used to come out smaller. At 2px
+             the four cells are an identical 6x6. -->
         <g fill="#3f8c39">
           <rect x="0" y="0" width="16" height="1"/><rect x="0" y="15" width="16" height="1"/>
           <rect x="0" y="0" width="1" height="16"/><rect x="15" y="0" width="1" height="16"/>
-          <rect x="8" y="1" width="1" height="14"/><rect x="1" y="8" width="14" height="1"/>
+          <rect x="7" y="1" width="2" height="14"/><rect x="1" y="7" width="14" height="2"/>
         </g>
-        <!-- white disc, top-left -->
+        <!-- white disc, top-left cell -->
         <g fill="#dff7da">
-          <rect x="3" y="2" width="3" height="1"/><rect x="2" y="3" width="5" height="3"/><rect x="3" y="6" width="3" height="1"/>
+          <rect x="3" y="2" width="2" height="1"/><rect x="2" y="3" width="4" height="2"/><rect x="3" y="5" width="2" height="1"/>
         </g>
-        <!-- neon disc, bottom-right -->
-        <g fill="#7cff6b">
-          <rect x="10" y="9" width="3" height="1"/><rect x="9" y="10" width="5" height="3"/><rect x="10" y="13" width="3" height="1"/>
-        </g>
-        <!-- legal-move hint, amber outline -->
+        <!-- legal-move ring, top-right cell -->
         <g fill="#ffcf4a">
-          <rect x="10" y="2" width="3" height="1"/><rect x="9" y="3" width="1" height="3"/>
-          <rect x="13" y="3" width="1" height="3"/><rect x="10" y="6" width="3" height="1"/>
+          <rect x="11" y="2" width="2" height="1"/><rect x="10" y="3" width="1" height="2"/>
+          <rect x="13" y="3" width="1" height="2"/><rect x="11" y="5" width="2" height="1"/>
+        </g>
+        <!-- neon disc, bottom-right cell -->
+        <g fill="#7cff6b">
+          <rect x="11" y="10" width="2" height="1"/><rect x="10" y="11" width="4" height="2"/><rect x="11" y="13" width="2" height="1"/>
         </g>
       </svg>
       <h3 class="card-title">OTHELLO</h3>
@@ -140,7 +144,7 @@
       <p class="card-blurb">
         Solo against the wall — three misses and you're out — or first to three against
         the CPU. Where the ball hits your paddle decides the angle it leaves at.
-        Scroll to move.
+        Hold the buttons to move, or scroll the wheel.
       </p>
       <div class="card-actions">
         <a class="btn" href="games/pong/index.html">▶ PLAY</a>
