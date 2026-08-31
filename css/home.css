@@ -58,8 +58,14 @@
     3px 3px 0 #7a3d00;
 }
 
-.marquee h1 .line2 {
+/* Both lines are their own block so each can be measured and nudged
+   independently — they're different sizes, so they need different nudges.
+   See the optical-centring note in index.html. */
+.marquee h1 > span {
   display: block;
+}
+
+.marquee h1 .line2 {
   color: var(--neon);
   text-shadow:
     0 0 10px var(--neon-glow),
