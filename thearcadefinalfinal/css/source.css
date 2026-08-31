@@ -1,0 +1,202 @@
+/* ==========================================================================
+   source.css — the code-reader pages under /source
+   ========================================================================== */
+
+.src-layout {
+  position: relative;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+  margin-bottom: 40px;
+}
+
+@media (max-width: 820px) {
+  .src-layout { grid-template-columns: 1fr; }
+  .src-files  { position: static !important; max-height: none !important; }
+}
+
+/* ------------------------------------------------------------- file list */
+
+.src-files {
+  position: sticky;
+  top: 16px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  background: #070d0a;
+  border: 2px solid #1a3120;
+  padding: 14px 12px;
+}
+
+.src-group {
+  font-family: var(--pixel);
+  font-size: 7px;
+  line-height: 1.8;
+  letter-spacing: 0.06em;
+  color: #3f6b3d;
+  margin: 14px 0 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed #1e3a22;
+}
+
+.src-group:first-child { margin-top: 0; }
+
+.src-file {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  background: transparent;
+  border: 0;
+  border-left: 3px solid transparent;
+  padding: 7px 10px;
+  cursor: pointer;
+  transition: color 0.12s, background 0.12s, border-color 0.12s;
+}
+
+.src-file:hover { color: var(--neon); background: #0a160d; }
+
+.src-file.is-active {
+  color: var(--neon-hot);
+  background: #0e2412;
+  border-left-color: var(--neon);
+}
+
+.src-file .src-note {
+  display: block;
+  font-size: 10.5px;
+  color: #3f6b3d;
+  margin-top: 2px;
+}
+
+.src-file.is-active .src-note { color: #5f9a5c; }
+
+/* ---------------------------------------------------------------- viewer */
+
+.src-viewer {
+  background: #050906;
+  border: 2px solid #1a3120;
+  min-width: 0;
+}
+
+.src-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 14px 16px;
+  border-bottom: 2px solid #1a3120;
+  background: #081109;
+}
+
+.src-path {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--neon-hot);
+  word-break: break-all;
+}
+
+.src-meta {
+  font-family: var(--pixel);
+  font-size: 7px;
+  letter-spacing: 0.06em;
+  color: #3f6b3d;
+  white-space: nowrap;
+}
+
+.src-desc {
+  font-size: 12.5px;
+  line-height: 1.75;
+  color: var(--ink-soft);
+  padding: 14px 16px;
+  border-bottom: 1px dashed #1e3a22;
+  margin: 0;
+}
+
+.src-body { overflow-x: auto; }
+
+pre.code {
+  margin: 0;
+  padding: 14px 0;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: var(--ink);
+  counter-reset: line;
+  tab-size: 2;
+}
+
+pre.code[hidden] { display: none; }
+
+pre.code .cl {
+  display: block;
+  white-space: pre;
+  padding-left: 62px;
+  text-indent: -62px;
+}
+
+pre.code .cl::before {
+  counter-increment: line;
+  content: counter(line);
+  display: inline-block;
+  width: 44px;
+  margin-right: 18px;
+  padding-right: 10px;
+  text-align: right;
+  text-indent: 0;
+  color: #2b4d29;
+  border-right: 1px solid #14261a;
+  user-select: none;
+}
+
+pre.code .cl:hover { background: rgba(124, 255, 107, 0.05); }
+
+/* token colours */
+pre.code .c { color: #4f7a4c; font-style: italic; }   /* comments */
+pre.code .s { color: var(--amber); }                  /* strings  */
+pre.code .k { color: var(--pink); }                   /* keywords */
+pre.code .n { color: var(--cyan); }                   /* numbers  */
+
+/* ------------------------------------------------------------------ misc */
+
+.src-intro {
+  position: relative;
+  z-index: 10;
+  background: #070d0a;
+  border: 2px solid #1a3120;
+  padding: 20px;
+  margin-bottom: 22px;
+}
+
+.src-intro p {
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--ink-soft);
+  margin: 0;
+}
+
+.src-intro p + p { margin-top: 10px; }
+
+.src-intro code {
+  font-family: var(--mono);
+  color: var(--neon-hot);
+  background: #0d1a10;
+  padding: 1px 5px;
+  font-size: 12px;
+}
+
+.src-intro a { color: var(--neon-dim); }
+.src-intro a:hover { color: var(--neon); }
+
+.src-hub {
+  position: relative;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 18px;
+}

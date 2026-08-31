@@ -1,0 +1,1369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>OTHELLO SOURCE — The Arcade</title>
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../css/arcade.css" />
+<link rel="stylesheet" href="../css/home.css" />
+<link rel="stylesheet" href="../css/source.css" />
+</head>
+<body>
+
+<canvas id="bg-invaders" aria-hidden="true"></canvas>
+<div class="bg-grid" aria-hidden="true"></div>
+<div class="bg-vignette" aria-hidden="true"></div>
+<div class="bg-scanlines" aria-hidden="true"></div>
+
+<div class="wrap">
+
+  <div class="shell-bar">
+    <div>
+      <h1 class="shell-title">OTHELLO &mdash; SOURCE</h1>
+      <p class="shell-sub">8 files, shown exactly as they ship</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <a class="btn " href="../games/othello/index.html">&#9654; PLAY</a>
+      <a class="btn btn-pink" href="../index.html">&#9664; ARCADE</a>
+    </div>
+  </div>
+
+  <div class="src-intro">
+      <p><code>othello-model.js</code> holds the board and the flipping rules; <code>othello-ai.js</code> holds both opponents — a greedy one that takes the biggest flip available, and a minimax search that assumes you'll answer with your best reply.</p>
+      <p><code>copyBoard()</code> is the one place the port diverges: minimax calls it tens of thousands of times, so it clones off the prototype instead of building a fresh board and resetting all 64 squares first.</p>
+  </div>
+
+  <div class="src-layout">
+    <nav class="src-files" aria-label="Files">
+      <p class="src-group">BROWSER — JAVASCRIPT</p>
+      <button class="src-file" type="button" data-pane="p0">othello-model.js<span class="src-note">board + rules</span></button>
+      <button class="src-file" type="button" data-pane="p1">othello-ai.js<span class="src-note">greedy CPU + minimax</span></button>
+      <button class="src-file" type="button" data-pane="p2">main.js<span class="src-note">the GUI</span></button>
+      <p class="src-group">BROWSER — MARKUP & STYLE</p>
+      <button class="src-file" type="button" data-pane="p3">index.html<span class="src-note">page structure</span></button>
+      <button class="src-file" type="button" data-pane="p4">style.css<span class="src-note">board styling</span></button>
+      <p class="src-group">ORIGINAL — JAVA (SWING)</p>
+      <button class="src-file" type="button" data-pane="p5">OthelloModel.java<span class="src-note">→ othello-model.js</span></button>
+      <button class="src-file" type="button" data-pane="p6">OthelloComputerAndAI.java<span class="src-note">→ othello-ai.js</span></button>
+      <button class="src-file" type="button" data-pane="p7">OthelloGUI.java<span class="src-note">→ main.js</span></button>
+    </nav>
+
+    <div class="src-viewer">
+      <div class="src-head">
+        <span class="src-path" id="srcPath"></span>
+        <span class="src-meta" id="srcMeta"></span>
+      </div>
+      <div class="src-body">
+<div class="src-pane" id="p0" hidden data-path="games/othello/js/othello-model.js" data-meta="204 LINES">
+<pre class="code"><span class="cl"><span class="c">/* ==========================================================================</span>
+</span><span class="cl"><span class="c">   othello-model.js  —  port of OthelloModel.java</span>
+</span><span class="cl"><span class="c">   Rules per https://www.ultraboardgames.com/othello/game-rules.php:</span>
+</span><span class="cl"><span class="c">   black moves first, and a player with no legal move forfeits the turn.</span>
+</span><span class="cl"><span class="c">   ========================================================================== */</span>
+</span><span class="cl">(<span class="k">function</span> () {
+</span><span class="cl">  <span class="s">&quot;use strict&quot;</span>;
+</span><span class="cl">  window.Oth = window.Oth || {};
+</span><span class="cl"> 
+</span><span class="cl">  <span class="k">var</span> Square = Object.freeze({ EMPTY: <span class="n">0</span>, WHITE: <span class="n">1</span>, BLACK: <span class="n">2</span> });
+</span><span class="cl">  <span class="k">var</span> Player = Object.freeze({ WHITE: <span class="s">&quot;WHITE&quot;</span>, BLACK: <span class="s">&quot;BLACK&quot;</span> });
+</span><span class="cl"> 
+</span><span class="cl">  <span class="k">var</span> DIRECTIONS = [
+</span><span class="cl">    [-<span class="n">1</span>, -<span class="n">1</span>], [-<span class="n">1</span>, <span class="n">0</span>], [-<span class="n">1</span>, <span class="n">1</span>],
+</span><span class="cl">    [ <span class="n">0</span>, -<span class="n">1</span>],          [ <span class="n">0</span>, <span class="n">1</span>],
+</span><span class="cl">    [ <span class="n">1</span>, -<span class="n">1</span>], [ <span class="n">1</span>, <span class="n">0</span>], [ <span class="n">1</span>, <span class="n">1</span>]
+</span><span class="cl">  ];
+</span><span class="cl"> 
+</span><span class="cl">  <span class="k">function</span> Move(row, column) {
+</span><span class="cl">    <span class="k">this</span>.row = row;
+</span><span class="cl">    <span class="k">this</span>.column = column;
+</span><span class="cl">  }
+</span><span class="cl">  Move.prototype.toString = <span class="k">function</span> () {
+</span><span class="cl">    <span class="k">return</span> <span class="s">&quot;(&quot;</span> + <span class="k">this</span>.row + <span class="s">&quot;, &quot;</span> + <span class="k">this</span>.column + <span class="s">&quot;)&quot;</span>;
+</span><span class="cl">  };
+</span><span class="cl"> 
+</span><span class="cl">  <span class="k">function</span> OthelloModel() {
+</span><span class="cl">    <span class="k">this</span>.size = <span class="n">8</span>;
+</span><span class="cl">    <span class="k">this</span>.board = [];
+</span><span class="cl">    <span class="k">for</span> (<span class="k">var</span> i = <span class="n">0</span>; i &lt; <span class="k">this</span>.size; i++) <span class="k">this</span>.board.push(<span class="k">new</span> Int8Array(<span class="k">this</span>.size));
+</span><span class="cl">    <span class="k">this</span>.currentPlayer = Player.BLACK;
+</span><span class="cl">    <span class="k">this</span>.resetGame();
+</span><span class="cl">  }
+</span><span class="cl"> 
+</span><span class="cl">  OthelloModel.prototype.resetGame = <span class="k">function</span> () {
+</span><span class="cl">    <span class="k">for</span> (<span class="k">var</span> i = <span class="n">0</span>; i &lt; <span class="k">this</span>.size; i++) {
+</span><span class="cl">      <span class="k">for</span> (<span class="k">var</span> j = <span class="n">0</span>; j &lt; <span class="k">this</span>.size; j++) <span class="k">this</span>.board[i][j] = Square.EMPTY;
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">this</span>.board[<span class="n">3</span>][<span class="n">3</span>] = Square.WHITE;
+</span><span class="cl">    <span class="k">this</span>.board[<span class="n">3</span>][<span class="n">4</span>] = Square.BLACK;
+</span><span class="cl">    <span class="k">this</span>.board[<span class="n">4</span>][<span class="n">3</span>] = Square.BLACK;
+</span><span class="cl">    <span class="k">this</span>.board[<span class="n">4</span>][<span class="n">4</span>] = Square.WHITE;
+</span><span class="cl">    <span class="k">this</span>.currentPlayer = Player.BLACK;   <span class="c">// black goes first in Othello</span>
+</span><span class="cl">  };
+</span><span class="cl"> 
+</span><span class="cl">  OthelloModel.prototype.getSize = <span class="k">function</span> () { <span class="k">return</span> <span class="k">this</span>.size; };
+</span><span class="cl"> 
+</span><span class="cl">  OthelloModel.prototype.getSquare = <span class="k">function</span> (row, column) {
+</span><span class="cl">    <span class="k">return</span> <span class="k">this</span>.board[row][column];
+</span><span class="cl">  };
+</span><span class="cl"> 
+</span><span class="cl">  OthelloModel.prototype.getCurrentPlayer = <span class="k">function</span> () { <span class="k">return</span> <span class="k">this</span>.currentPlayer; };
+</span><span class="cl"> 
+</span><span class="cl">  OthelloModel.prototype.switchTurn = <span class="k">function</span> () {
+</span><span class="cl">    <span class="k">this</span>.currentPlayer = <span class="k">this</span>.opponent(<span class="k">this</span>.currentPlayer);
+</span><span class="cl">  };
+</span><span class="cl"> 
+</span><span class="cl">  OthelloModel.prototype.opponent = <span class="k">function</span> (player) {
+</span><span class="cl">    <span class="k">return</span> player === Player.BLACK ? Player.WHITE : Player.BLACK;
+</span><span class="cl">  };
+</span><span class="cl"> 
+</span><span class="cl">  OthelloModel.prototype.playersSquare = <span class="k">function</span> (player) {
+</span><span class="cl">    <span class="k">return</span> player === Player.BLACK ? Square.BLACK : Square.WHITE;
+</span><span class="cl">  };
+</span><span class="cl"> 
+</span><span class="cl">  OthelloModel.prototype.opponentSquareColor = <span class="k">function</span> (player) {
+</span><span class="cl">    <span class="k">return</span> player === Player.BLACK ? Square.WHITE : Square.BLACK;
+</span><span class="cl">  };
+</span><span class="cl"> 
+</span><span class="cl">  OthelloModel.prototype.isInside = <span class="k">function</span> (row, column) {
+</span><span class="cl">    <span class="k">return</span> row &gt;= <span class="n">0</span> &amp;&amp; row &lt; <span class="k">this</span>.size &amp;&amp; column &gt;= <span class="n">0</span> &amp;&amp; column &lt; <span class="k">this</span>.size;
+</span><span class="cl">  };
+</span><span class="cl"> 
+</span><span class="cl">  OthelloModel.prototype.isValidMove = <span class="k">function</span> (row, column, player) {
+</span><span class="cl">    <span class="k">if</span> (!<span class="k">this</span>.isInside(row, column)) <span class="k">return</span> <span class="k">false</span>;
+</span><span class="cl">    <span class="k">if</span> (<span class="k">this</span>.board[row][column] !== Square.EMPTY) <span class="k">return</span> <span class="k">false</span>;
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">for</span> (<span class="k">var</span> d = <span class="n">0</span>; d &lt; DIRECTIONS.length; d++) {
+</span><span class="cl">      <span class="k">if</span> (<span class="k">this</span>.capturesInAnyDirection(row, column, DIRECTIONS[d][<span class="n">0</span>], DIRECTIONS[d][<span class="n">1</span>], player)) {
+</span><span class="cl">        <span class="k">return</span> <span class="k">true</span>;
+</span><span class="cl">      }
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">return</span> <span class="k">false</span>;
+</span><span class="cl">  };
+</span><span class="cl"> 
+</span><span class="cl">  <span class="c">/* Walk out from (row, column): we need at least one enemy disc, then one of</span>
+</span><span class="cl"><span class="c">     ours, with no gap in between. */</span>
+</span><span class="cl">  OthelloModel.prototype.capturesInAnyDirection = <span class="k">function</span> (row, column, dRow, dCol, player) {
+</span><span class="cl">    <span class="k">var</span> r = row + dRow;
+</span><span class="cl">    <span class="k">var</span> c = column + dCol;
+</span><span class="cl">    <span class="k">var</span> opponent = <span class="k">this</span>.opponentSquareColor(player);
+</span><span class="cl">    <span class="k">var</span> own = <span class="k">this</span>.playersSquare(player);
+</span><span class="cl">    <span class="k">var</span> foundOpponent = <span class="k">false</span>;
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">while</span> (<span class="k">this</span>.isInside(r, c)) {
+</span><span class="cl">      <span class="k">if</span> (<span class="k">this</span>.board[r][c] === opponent) {
+</span><span class="cl">        foundOpponent = <span class="k">true</span>;
+</span><span class="cl">      } <span class="k">else</span> <span class="k">if</span> (<span class="k">this</span>.board[r][c] === own) {
+</span><span class="cl">        <span class="k">return</span> foundOpponent;
+</span><span class="cl">      } <span class="k">else</span> {
+</span><span class="cl">        <span class="k">return</span> <span class="k">false</span>;
+</span><span class="cl">      }
+</span><span class="cl">      r += dRow;
+</span><span class="cl">      c += dCol;
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">return</span> <span class="k">false</span>;
+</span><span class="cl">  };
+</span><span class="cl"> 
+</span><span class="cl">  OthelloModel.prototype.flipInDirection = <span class="k">function</span> (row, column, dRow, dCol, player) {
+</span><span class="cl">    <span class="k">var</span> r = row + dRow;
+</span><span class="cl">    <span class="k">var</span> c = column + dCol;
+</span><span class="cl">    <span class="k">var</span> opponent = <span class="k">this</span>.opponentSquareColor(player);
+</span><span class="cl">    <span class="k">var</span> own = <span class="k">this</span>.playersSquare(player);
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">while</span> (<span class="k">this</span>.isInside(r, c) &amp;&amp; <span class="k">this</span>.board[r][c] === opponent) {
+</span><span class="cl">      <span class="k">this</span>.board[r][c] = own;
+</span><span class="cl">      r += dRow;
+</span><span class="cl">      c += dCol;
+</span><span class="cl">    }
+</span><span class="cl">  };
+</span><span class="cl"> 
+</span><span class="cl">  OthelloModel.prototype.getValidMoves = <span class="k">function</span> (player) {
+</span><span class="cl">    <span class="k">var</span> moves = [];
+</span><span class="cl">    <span class="k">for</span> (<span class="k">var</span> i = <span class="n">0</span>; i &lt; <span class="k">this</span>.size; i++) {
+</span><span class="cl">      <span class="k">for</span> (<span class="k">var</span> j = <span class="n">0</span>; j &lt; <span class="k">this</span>.size; j++) {
+</span><span class="cl">        <span class="k">if</span> (<span class="k">this</span>.isValidMove(i, j, player)) moves.push(<span class="k">new</span> Move(i, j));
+</span><span class="cl">      }
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">return</span> moves;
+</span><span class="cl">  };
+</span><span class="cl"> 
+</span><span class="cl">  OthelloModel.prototype.makeMove = <span class="k">function</span> (row, column, player) {
+</span><span class="cl">    <span class="k">if</span> (!<span class="k">this</span>.isValidMove(row, column, player)) <span class="k">return</span> <span class="k">false</span>;
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">this</span>.board[row][column] = <span class="k">this</span>.playersSquare(player);
+</span><span class="cl">    <span class="k">this</span>.lastMove = { row: row, column: column };
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">for</span> (<span class="k">var</span> d = <span class="n">0</span>; d &lt; DIRECTIONS.length; d++) {
+</span><span class="cl">      <span class="k">if</span> (<span class="k">this</span>.capturesInAnyDirection(row, column, DIRECTIONS[d][<span class="n">0</span>], DIRECTIONS[d][<span class="n">1</span>], player)) {
+</span><span class="cl">        <span class="k">this</span>.flipInDirection(row, column, DIRECTIONS[d][<span class="n">0</span>], DIRECTIONS[d][<span class="n">1</span>], player);
+</span><span class="cl">      }
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">this</span>.currentPlayer = <span class="k">this</span>.opponent(player);
+</span><span class="cl">    <span class="k">this</span>.handleSkips();
+</span><span class="cl">    <span class="k">return</span> <span class="k">true</span>;
+</span><span class="cl">  };
+</span><span class="cl"> 
+</span><span class="cl">  <span class="c">/* If the player to move has nothing legal, the turn bounces back. */</span>
+</span><span class="cl">  OthelloModel.prototype.handleSkips = <span class="k">function</span> () {
+</span><span class="cl">    <span class="k">this</span>.skipped = <span class="k">false</span>;
+</span><span class="cl">    <span class="k">if</span> (<span class="k">this</span>.getValidMoves(<span class="k">this</span>.currentPlayer).length === <span class="n">0</span> &amp;&amp; !<span class="k">this</span>.isGameOver()) {
+</span><span class="cl">      <span class="k">this</span>.currentPlayer = <span class="k">this</span>.opponent(<span class="k">this</span>.currentPlayer);
+</span><span class="cl">      <span class="k">this</span>.skipped = <span class="k">true</span>;
+</span><span class="cl">    }
+</span><span class="cl">  };
+</span><span class="cl"> 
+</span><span class="cl">  OthelloModel.prototype.countPieces = <span class="k">function</span> (player) {
+</span><span class="cl">    <span class="k">var</span> correctColor = <span class="k">this</span>.playersSquare(player);
+</span><span class="cl">    <span class="k">var</span> count = <span class="n">0</span>;
+</span><span class="cl">    <span class="k">for</span> (<span class="k">var</span> i = <span class="n">0</span>; i &lt; <span class="k">this</span>.size; i++) {
+</span><span class="cl">      <span class="k">for</span> (<span class="k">var</span> j = <span class="n">0</span>; j &lt; <span class="k">this</span>.size; j++) {
+</span><span class="cl">        <span class="k">if</span> (<span class="k">this</span>.board[i][j] === correctColor) count++;
+</span><span class="cl">      }
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">return</span> count;
+</span><span class="cl">  };
+</span><span class="cl"> 
+</span><span class="cl">  OthelloModel.prototype.isGameOver = <span class="k">function</span> () {
+</span><span class="cl">    <span class="k">return</span> <span class="k">this</span>.getValidMoves(Player.BLACK).length === <span class="n">0</span> &amp;&amp;
+</span><span class="cl">           <span class="k">this</span>.getValidMoves(Player.WHITE).length === <span class="n">0</span>;
+</span><span class="cl">  };
+</span><span class="cl"> 
+</span><span class="cl">  OthelloModel.prototype.getWinner = <span class="k">function</span> () {
+</span><span class="cl">    <span class="k">var</span> black = <span class="k">this</span>.countPieces(Player.BLACK);
+</span><span class="cl">    <span class="k">var</span> white = <span class="k">this</span>.countPieces(Player.WHITE);
+</span><span class="cl">    <span class="k">if</span> (black &gt; white) <span class="k">return</span> Player.BLACK;
+</span><span class="cl">    <span class="k">if</span> (white &gt; black) <span class="k">return</span> Player.WHITE;
+</span><span class="cl">    <span class="k">return</span> <span class="k">null</span>;                       <span class="c">// tie</span>
+</span><span class="cl">  };
+</span><span class="cl"> 
+</span><span class="cl">  <span class="c">/* Simple material evaluation: my discs minus theirs. */</span>
+</span><span class="cl">  OthelloModel.prototype.checkWhoIsWinning = <span class="k">function</span> (player) {
+</span><span class="cl">    <span class="k">return</span> <span class="k">this</span>.countPieces(player) - <span class="k">this</span>.countPieces(<span class="k">this</span>.opponent(player));
+</span><span class="cl">  };
+</span><span class="cl"> 
+</span><span class="cl">  <span class="c">/* The Java copyBoard() went through `new OthelloModel()`, which resets the</span>
+</span><span class="cl"><span class="c">     whole board just to overwrite it a line later. Minimax calls this tens of</span>
+</span><span class="cl"><span class="c">     thousands of times, so here it clones directly off the prototype instead —</span>
+</span><span class="cl"><span class="c">     same resulting object, none of the setup cost. */</span>
+</span><span class="cl">  OthelloModel.prototype.copyBoard = <span class="k">function</span> () {
+</span><span class="cl">    <span class="k">var</span> copy = Object.create(OthelloModel.prototype);
+</span><span class="cl">    copy.size = <span class="k">this</span>.size;
+</span><span class="cl">    copy.board = <span class="k">new</span> Array(<span class="k">this</span>.size);
+</span><span class="cl">    <span class="k">for</span> (<span class="k">var</span> i = <span class="n">0</span>; i &lt; <span class="k">this</span>.size; i++) copy.board[i] = <span class="k">this</span>.board[i].slice();
+</span><span class="cl">    copy.currentPlayer = <span class="k">this</span>.currentPlayer;
+</span><span class="cl">    <span class="k">return</span> copy;
+</span><span class="cl">  };
+</span><span class="cl"> 
+</span><span class="cl">  window.Oth.Square = Square;
+</span><span class="cl">  window.Oth.Player = Player;
+</span><span class="cl">  window.Oth.Move = Move;
+</span><span class="cl">  window.Oth.OthelloModel = OthelloModel;
+</span><span class="cl">})();
+</span></pre>
+</div>
+<div class="src-pane" id="p1" hidden data-path="games/othello/js/othello-ai.js" data-meta="115 LINES">
+<pre class="code"><span class="cl"><span class="c">/* ==========================================================================</span>
+</span><span class="cl"><span class="c">   othello-ai.js  —  port of OthelloComputerAndAI.java</span>
+</span><span class="cl"> 
+</span><span class="cl"><span class="c">   Two opponents:</span>
+</span><span class="cl"><span class="c">     GREEDY_CPU  — plays whichever legal move flips the most discs right now.</span>
+</span><span class="cl"><span class="c">                   Strong-looking early, reliably bad at Othello, because</span>
+</span><span class="cl"><span class="c">                   grabbing discs early hands your opponent options later.</span>
+</span><span class="cl"><span class="c">     MINIMAX_AI  — searches to the chosen depth, scoring positions by disc</span>
+</span><span class="cl"><span class="c">                   difference, assuming the opponent plays its best reply.</span>
+</span><span class="cl"><span class="c">   ========================================================================== */</span>
+</span><span class="cl">(<span class="k">function</span> () {
+</span><span class="cl">  <span class="s">&quot;use strict&quot;</span>;
+</span><span class="cl">  window.Oth = window.Oth || {};
+</span><span class="cl"> 
+</span><span class="cl">  <span class="k">var</span> CompType = Object.freeze({
+</span><span class="cl">    GREEDY_CPU: <span class="s">&quot;GREEDY_CPU&quot;</span>,
+</span><span class="cl">    MINIMAX_AI: <span class="s">&quot;MINIMAX_AI&quot;</span>
+</span><span class="cl">  });
+</span><span class="cl"> 
+</span><span class="cl">  <span class="k">function</span> OthelloComputerAndAI() {}
+</span><span class="cl"> 
+</span><span class="cl">  OthelloComputerAndAI.prototype.getComputerMove =
+</span><span class="cl">    <span class="k">function</span> (model, compType, computerPlayer, minimaxDepth) {
+</span><span class="cl">      <span class="k">if</span> (compType === CompType.GREEDY_CPU) {
+</span><span class="cl">        <span class="k">return</span> <span class="k">this</span>.getGreedyCpuMove(model, computerPlayer);
+</span><span class="cl">      }
+</span><span class="cl">      <span class="k">return</span> <span class="k">this</span>.getMinimaxAiMove(model, computerPlayer, minimaxDepth);
+</span><span class="cl">    };
+</span><span class="cl"> 
+</span><span class="cl">  OthelloComputerAndAI.prototype.getGreedyCpuMove = <span class="k">function</span> (model, player) {
+</span><span class="cl">    <span class="k">var</span> moves = model.getValidMoves(player);
+</span><span class="cl">    <span class="k">if</span> (moves.length === <span class="n">0</span>) <span class="k">return</span> <span class="k">null</span>;
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">var</span> bestMove = <span class="k">null</span>;
+</span><span class="cl">    <span class="k">var</span> bestScore = -Infinity;
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">for</span> (<span class="k">var</span> i = <span class="n">0</span>; i &lt; moves.length; i++) {
+</span><span class="cl">      <span class="k">var</span> move = moves[i];
+</span><span class="cl">      <span class="k">var</span> copy = model.copyBoard();
+</span><span class="cl">      <span class="k">var</span> scoreBeforeMove = copy.countPieces(player);
+</span><span class="cl">      copy.makeMove(move.row, move.column, player);
+</span><span class="cl">      <span class="k">var</span> scoreAfterMove = copy.countPieces(player);
+</span><span class="cl">      <span class="k">var</span> gainThisMove = scoreAfterMove - scoreBeforeMove;
+</span><span class="cl"> 
+</span><span class="cl">      <span class="k">if</span> (gainThisMove &gt; bestScore) {
+</span><span class="cl">        bestScore = gainThisMove;
+</span><span class="cl">        bestMove = move;
+</span><span class="cl">      }
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">return</span> bestMove;
+</span><span class="cl">  };
+</span><span class="cl"> 
+</span><span class="cl">  OthelloComputerAndAI.prototype.getMinimaxAiMove = <span class="k">function</span> (model, player, minimaxDepth) {
+</span><span class="cl">    <span class="k">var</span> moves = model.getValidMoves(player);
+</span><span class="cl">    <span class="k">if</span> (moves.length === <span class="n">0</span>) <span class="k">return</span> <span class="k">null</span>;
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">var</span> bestMove = <span class="k">null</span>;
+</span><span class="cl">    <span class="k">var</span> bestScore = -Infinity;
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">for</span> (<span class="k">var</span> i = <span class="n">0</span>; i &lt; moves.length; i++) {
+</span><span class="cl">      <span class="k">var</span> move = moves[i];
+</span><span class="cl">      <span class="k">var</span> copy = model.copyBoard();
+</span><span class="cl">      copy.makeMove(move.row, move.column, player);
+</span><span class="cl">      <span class="k">var</span> score = <span class="k">this</span>.minimax(copy, minimaxDepth - <span class="n">1</span>, <span class="k">false</span>, player);
+</span><span class="cl">      <span class="k">if</span> (score &gt; bestScore) {
+</span><span class="cl">        bestScore = score;
+</span><span class="cl">        bestMove = move;
+</span><span class="cl">      }
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">return</span> bestMove;
+</span><span class="cl">  };
+</span><span class="cl"> 
+</span><span class="cl">  OthelloComputerAndAI.prototype.minimax = <span class="k">function</span> (model, minimaxDepth, maximize, player) {
+</span><span class="cl">    <span class="k">if</span> (minimaxDepth &lt;= <span class="n">0</span> || model.isGameOver()) {
+</span><span class="cl">      <span class="k">return</span> model.checkWhoIsWinning(player);
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">var</span> currentPlayer = model.getCurrentPlayer();
+</span><span class="cl">    <span class="k">var</span> moves = model.getValidMoves(currentPlayer);
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">if</span> (moves.length === <span class="n">0</span>) {
+</span><span class="cl">      <span class="k">var</span> passed = model.copyBoard();
+</span><span class="cl">      passed.switchTurn();
+</span><span class="cl">      <span class="k">return</span> <span class="k">this</span>.minimax(passed, minimaxDepth - <span class="n">1</span>, !maximize, player);
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">return</span> maximize
+</span><span class="cl">      ? <span class="k">this</span>.getMaxScore(model, moves, minimaxDepth, player)
+</span><span class="cl">      : <span class="k">this</span>.getMinScore(model, moves, minimaxDepth, player);
+</span><span class="cl">  };
+</span><span class="cl"> 
+</span><span class="cl">  OthelloComputerAndAI.prototype.getMaxScore = <span class="k">function</span> (model, moves, minimaxDepth, player) {
+</span><span class="cl">    <span class="k">var</span> bestScore = -Infinity;
+</span><span class="cl">    <span class="k">for</span> (<span class="k">var</span> i = <span class="n">0</span>; i &lt; moves.length; i++) {
+</span><span class="cl">      <span class="k">var</span> copy = model.copyBoard();
+</span><span class="cl">      copy.makeMove(moves[i].row, moves[i].column, model.getCurrentPlayer());
+</span><span class="cl">      bestScore = Math.max(bestScore, <span class="k">this</span>.minimax(copy, minimaxDepth - <span class="n">1</span>, <span class="k">false</span>, player));
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">return</span> bestScore;
+</span><span class="cl">  };
+</span><span class="cl"> 
+</span><span class="cl">  OthelloComputerAndAI.prototype.getMinScore = <span class="k">function</span> (model, moves, minimaxDepth, player) {
+</span><span class="cl">    <span class="k">var</span> bestScore = Infinity;
+</span><span class="cl">    <span class="k">for</span> (<span class="k">var</span> i = <span class="n">0</span>; i &lt; moves.length; i++) {
+</span><span class="cl">      <span class="k">var</span> copy = model.copyBoard();
+</span><span class="cl">      copy.makeMove(moves[i].row, moves[i].column, model.getCurrentPlayer());
+</span><span class="cl">      bestScore = Math.min(bestScore, <span class="k">this</span>.minimax(copy, minimaxDepth - <span class="n">1</span>, <span class="k">true</span>, player));
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">return</span> bestScore;
+</span><span class="cl">  };
+</span><span class="cl"> 
+</span><span class="cl">  window.Oth.CompType = CompType;
+</span><span class="cl">  window.Oth.OthelloComputerAndAI = OthelloComputerAndAI;
+</span><span class="cl">})();
+</span></pre>
+</div>
+<div class="src-pane" id="p2" hidden data-path="games/othello/js/main.js" data-meta="214 LINES">
+<pre class="code"><span class="cl"><span class="c">/* ==========================================================================</span>
+</span><span class="cl"><span class="c">   main.js  —  port of OthelloGUI.java</span>
+</span><span class="cl"><span class="c">   Human is BLACK and moves first. The computer&#x27;s reply is fired on a short</span>
+</span><span class="cl"><span class="c">   delay (the Swing version used a one-shot javax.swing.Timer) so the board has</span>
+</span><span class="cl"><span class="c">   a chance to repaint with your move before the machine answers.</span>
+</span><span class="cl"><span class="c">   ========================================================================== */</span>
+</span><span class="cl">(<span class="k">function</span> () {
+</span><span class="cl">  <span class="s">&quot;use strict&quot;</span>;
+</span><span class="cl"> 
+</span><span class="cl">  <span class="k">var</span> Oth = window.Oth;
+</span><span class="cl">  <span class="k">var</span> Player = Oth.Player;
+</span><span class="cl">  <span class="k">var</span> Square = Oth.Square;
+</span><span class="cl"> 
+</span><span class="cl">  <span class="k">var</span> HUMAN = Player.BLACK;
+</span><span class="cl">  <span class="k">var</span> COMPUTER = Player.WHITE;
+</span><span class="cl"> 
+</span><span class="cl">  <span class="k">var</span> model = <span class="k">new</span> Oth.OthelloModel();
+</span><span class="cl">  <span class="k">var</span> brain = <span class="k">new</span> Oth.OthelloComputerAndAI();
+</span><span class="cl"> 
+</span><span class="cl">  <span class="k">var</span> boardEl = document.getElementById(<span class="s">&quot;board&quot;</span>);
+</span><span class="cl">  <span class="k">var</span> statusEl = document.getElementById(<span class="s">&quot;status&quot;</span>);
+</span><span class="cl">  <span class="k">var</span> scoreEl = document.getElementById(<span class="s">&quot;score&quot;</span>);
+</span><span class="cl">  <span class="k">var</span> typeEl = document.getElementById(<span class="s">&quot;compType&quot;</span>);
+</span><span class="cl">  <span class="k">var</span> depthEl = document.getElementById(<span class="s">&quot;depth&quot;</span>);
+</span><span class="cl">  <span class="k">var</span> depthWrap = document.getElementById(<span class="s">&quot;depthWrap&quot;</span>);
+</span><span class="cl">  <span class="k">var</span> newGameBtn = document.getElementById(<span class="s">&quot;newGameBtn&quot;</span>);
+</span><span class="cl"> 
+</span><span class="cl">  <span class="k">var</span> modal = document.getElementById(<span class="s">&quot;gameOverModal&quot;</span>);
+</span><span class="cl">  <span class="k">var</span> modalTitle = document.getElementById(<span class="s">&quot;gameOverTitle&quot;</span>);
+</span><span class="cl">  <span class="k">var</span> modalSub = document.getElementById(<span class="s">&quot;gameOverSubtitle&quot;</span>);
+</span><span class="cl">  <span class="k">var</span> playAgainBtn = document.getElementById(<span class="s">&quot;playAgainBtn&quot;</span>);
+</span><span class="cl"> 
+</span><span class="cl">  <span class="k">var</span> cells = [];
+</span><span class="cl">  <span class="k">var</span> thinking = <span class="k">false</span>;
+</span><span class="cl"> 
+</span><span class="cl">  <span class="c">/* ------------------------------------------------------------ board setup */</span>
+</span><span class="cl"> 
+</span><span class="cl">  <span class="k">function</span> setupBoard() {
+</span><span class="cl">    boardEl.innerHTML = <span class="s">&quot;&quot;</span>;
+</span><span class="cl">    cells = [];
+</span><span class="cl">    <span class="k">for</span> (<span class="k">var</span> i = <span class="n">0</span>; i &lt; model.getSize(); i++) {
+</span><span class="cl">      cells.push([]);
+</span><span class="cl">      <span class="k">for</span> (<span class="k">var</span> j = <span class="n">0</span>; j &lt; model.getSize(); j++) {
+</span><span class="cl">        <span class="k">var</span> cell = document.createElement(<span class="s">&quot;button&quot;</span>);
+</span><span class="cl">        cell.type = <span class="s">&quot;button&quot;</span>;
+</span><span class="cl">        cell.className = <span class="s">&quot;oth-cell&quot;</span>;
+</span><span class="cl">        cell.setAttribute(<span class="s">&quot;aria-label&quot;</span>, <span class="s">&quot;Row &quot;</span> + (i + <span class="n">1</span>) + <span class="s">&quot;, column &quot;</span> + (j + <span class="n">1</span>));
+</span><span class="cl"> 
+</span><span class="cl">        <span class="k">var</span> disc = document.createElement(<span class="s">&quot;span&quot;</span>);
+</span><span class="cl">        disc.className = <span class="s">&quot;oth-disc&quot;</span>;
+</span><span class="cl">        cell.appendChild(disc);
+</span><span class="cl"> 
+</span><span class="cl">        (<span class="k">function</span> (row, column, el) {
+</span><span class="cl">          el.addEventListener(<span class="s">&quot;click&quot;</span>, <span class="k">function</span> () { handleHumanMove(row, column); });
+</span><span class="cl">        })(i, j, cell);
+</span><span class="cl"> 
+</span><span class="cl">        cells[i][j] = cell;
+</span><span class="cl">        boardEl.appendChild(cell);
+</span><span class="cl">      }
+</span><span class="cl">    }
+</span><span class="cl">  }
+</span><span class="cl"> 
+</span><span class="cl">  <span class="c">/* -------------------------------------------------------------- game flow */</span>
+</span><span class="cl"> 
+</span><span class="cl">  <span class="k">function</span> handleHumanMove(row, column) {
+</span><span class="cl">    <span class="k">if</span> (model.isGameOver() || thinking) <span class="k">return</span>;
+</span><span class="cl">    <span class="k">if</span> (model.getCurrentPlayer() !== HUMAN) <span class="k">return</span>;
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">if</span> (!model.makeMove(row, column, HUMAN)) {
+</span><span class="cl">      flashIllegal(cells[row][column]);
+</span><span class="cl">      <span class="k">return</span>;
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    refreshBoard();
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">if</span> (!model.isGameOver() &amp;&amp; model.getCurrentPlayer() === COMPUTER) {
+</span><span class="cl">      computerMove();
+</span><span class="cl">    } <span class="k">else</span> <span class="k">if</span> (model.isGameOver()) {
+</span><span class="cl">      showGameOverMessage();
+</span><span class="cl">    }
+</span><span class="cl">  }
+</span><span class="cl"> 
+</span><span class="cl">  <span class="k">function</span> computerMove() {
+</span><span class="cl">    thinking = <span class="k">true</span>;
+</span><span class="cl">    statusEl.textContent = <span class="s">&quot;COMPUTER THINKING...&quot;</span>;
+</span><span class="cl">    boardEl.classList.add(<span class="s">&quot;is-thinking&quot;</span>);
+</span><span class="cl"> 
+</span><span class="cl">    <span class="c">// Two frames of breathing room: the first lets the browser paint the</span>
+</span><span class="cl">    <span class="c">// &quot;thinking&quot; state, the second runs the search (which blocks the thread).</span>
+</span><span class="cl">    requestAnimationFrame(<span class="k">function</span> () {
+</span><span class="cl">      setTimeout(<span class="k">function</span> () {
+</span><span class="cl">        <span class="k">var</span> theType = typeEl.value;
+</span><span class="cl">        <span class="k">var</span> maximizeDepth = parseInt(depthEl.value, <span class="n">10</span>) || <span class="n">3</span>;
+</span><span class="cl">        <span class="k">var</span> move = brain.getComputerMove(model, theType, COMPUTER, maximizeDepth);
+</span><span class="cl"> 
+</span><span class="cl">        <span class="k">if</span> (move) model.makeMove(move.row, move.column, COMPUTER);
+</span><span class="cl"> 
+</span><span class="cl">        thinking = <span class="k">false</span>;
+</span><span class="cl">        boardEl.classList.remove(<span class="s">&quot;is-thinking&quot;</span>);
+</span><span class="cl">        refreshBoard();
+</span><span class="cl"> 
+</span><span class="cl">        <span class="c">// If the human has no legal reply, the model already bounced the turn</span>
+</span><span class="cl">        <span class="c">// back to the computer — keep going until it&#x27;s genuinely our move.</span>
+</span><span class="cl">        <span class="k">if</span> (!model.isGameOver() &amp;&amp; model.getCurrentPlayer() === COMPUTER) {
+</span><span class="cl">          computerMove();
+</span><span class="cl">        } <span class="k">else</span> <span class="k">if</span> (model.isGameOver()) {
+</span><span class="cl">          showGameOverMessage();
+</span><span class="cl">        }
+</span><span class="cl">      }, <span class="n">260</span>);
+</span><span class="cl">    });
+</span><span class="cl">  }
+</span><span class="cl"> 
+</span><span class="cl">  <span class="c">/* ------------------------------------------------------------- rendering */</span>
+</span><span class="cl"> 
+</span><span class="cl">  <span class="k">function</span> refreshBoard() {
+</span><span class="cl">    <span class="k">var</span> showHints = !thinking &amp;&amp; model.getCurrentPlayer() === HUMAN &amp;&amp; !model.isGameOver();
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">for</span> (<span class="k">var</span> i = <span class="n">0</span>; i &lt; model.getSize(); i++) {
+</span><span class="cl">      <span class="k">for</span> (<span class="k">var</span> j = <span class="n">0</span>; j &lt; model.getSize(); j++) {
+</span><span class="cl">        <span class="k">var</span> cell = cells[i][j];
+</span><span class="cl">        cell.className = <span class="s">&quot;oth-cell&quot;</span>;
+</span><span class="cl"> 
+</span><span class="cl">        <span class="k">var</span> square = model.getSquare(i, j);
+</span><span class="cl">        <span class="k">if</span> (square === Square.BLACK) {
+</span><span class="cl">          cell.classList.add(<span class="s">&quot;has-black&quot;</span>);
+</span><span class="cl">        } <span class="k">else</span> <span class="k">if</span> (square === Square.WHITE) {
+</span><span class="cl">          cell.classList.add(<span class="s">&quot;has-white&quot;</span>);
+</span><span class="cl">        } <span class="k">else</span> <span class="k">if</span> (showHints &amp;&amp; model.isValidMove(i, j, HUMAN)) {
+</span><span class="cl">          cell.classList.add(<span class="s">&quot;is-hint&quot;</span>);
+</span><span class="cl">        }
+</span><span class="cl"> 
+</span><span class="cl">        <span class="k">if</span> (model.lastMove &amp;&amp; model.lastMove.row === i &amp;&amp; model.lastMove.column === j) {
+</span><span class="cl">          cell.classList.add(<span class="s">&quot;is-last&quot;</span>);
+</span><span class="cl">        }
+</span><span class="cl">      }
+</span><span class="cl">    }
+</span><span class="cl">    updateScoreLabel();
+</span><span class="cl">    updateStatusLabel();
+</span><span class="cl">  }
+</span><span class="cl"> 
+</span><span class="cl">  <span class="k">function</span> updateScoreLabel() {
+</span><span class="cl">    scoreEl.textContent =
+</span><span class="cl">      <span class="s">&quot;YOU &quot;</span> + model.countPieces(Player.BLACK) +
+</span><span class="cl">      <span class="s">&quot;  ·  CPU &quot;</span> + model.countPieces(Player.WHITE);
+</span><span class="cl">  }
+</span><span class="cl"> 
+</span><span class="cl">  <span class="k">function</span> updateStatusLabel() {
+</span><span class="cl">    <span class="k">if</span> (model.isGameOver()) {
+</span><span class="cl">      statusEl.textContent = gameOverHeadline();
+</span><span class="cl">    } <span class="k">else</span> <span class="k">if</span> (thinking) {
+</span><span class="cl">      statusEl.textContent = <span class="s">&quot;COMPUTER THINKING...&quot;</span>;
+</span><span class="cl">    } <span class="k">else</span> <span class="k">if</span> (model.getCurrentPlayer() === HUMAN) {
+</span><span class="cl">      statusEl.textContent = model.skipped
+</span><span class="cl">        ? <span class="s">&quot;CPU HAD NO MOVE — YOUR TURN AGAIN&quot;</span>
+</span><span class="cl">        : <span class="s">&quot;YOUR TURN — YOU ARE BLACK&quot;</span>;
+</span><span class="cl">    } <span class="k">else</span> {
+</span><span class="cl">      statusEl.textContent = <span class="s">&quot;COMPUTER THINKING...&quot;</span>;
+</span><span class="cl">    }
+</span><span class="cl">  }
+</span><span class="cl"> 
+</span><span class="cl">  <span class="k">function</span> gameOverHeadline() {
+</span><span class="cl">    <span class="k">var</span> winner = model.getWinner();
+</span><span class="cl">    <span class="k">if</span> (winner === <span class="k">null</span>) <span class="k">return</span> <span class="s">&quot;GAME OVER — TIE GAME!!&quot;</span>;
+</span><span class="cl">    <span class="k">if</span> (winner === HUMAN) <span class="k">return</span> <span class="s">&quot;GAME OVER — YOU WIN!!!&quot;</span>;
+</span><span class="cl">    <span class="k">return</span> <span class="s">&quot;GAME OVER — COMPUTER WON :(&quot;</span>;
+</span><span class="cl">  }
+</span><span class="cl"> 
+</span><span class="cl">  <span class="k">function</span> showGameOverMessage() {
+</span><span class="cl">    <span class="k">var</span> winner = model.getWinner();
+</span><span class="cl">    modalTitle.textContent =
+</span><span class="cl">      winner === <span class="k">null</span> ? <span class="s">&quot;TIE GAME!!&quot;</span> :
+</span><span class="cl">      winner === HUMAN ? <span class="s">&quot;YOU WIN!!! CONGRATS!!!&quot;</span> : <span class="s">&quot;COMPUTER WON :(&quot;</span>;
+</span><span class="cl">    modalSub.textContent =
+</span><span class="cl">      <span class="s">&quot;Final count — you &quot;</span> + model.countPieces(Player.BLACK) +
+</span><span class="cl">      <span class="s">&quot;, computer &quot;</span> + model.countPieces(Player.WHITE) + <span class="s">&quot;.&quot;</span>;
+</span><span class="cl">    modal.hidden = <span class="k">false</span>;
+</span><span class="cl">    playAgainBtn.focus();
+</span><span class="cl">  }
+</span><span class="cl"> 
+</span><span class="cl">  <span class="k">function</span> flashIllegal(cell) {
+</span><span class="cl">    cell.classList.add(<span class="s">&quot;is-illegal&quot;</span>);
+</span><span class="cl">    setTimeout(<span class="k">function</span> () { cell.classList.remove(<span class="s">&quot;is-illegal&quot;</span>); }, <span class="n">320</span>);
+</span><span class="cl">  }
+</span><span class="cl"> 
+</span><span class="cl">  <span class="c">/* ----------------------------------------------------------------- wiring */</span>
+</span><span class="cl"> 
+</span><span class="cl">  <span class="k">function</span> newGame() {
+</span><span class="cl">    model.resetGame();
+</span><span class="cl">    model.lastMove = <span class="k">null</span>;
+</span><span class="cl">    model.skipped = <span class="k">false</span>;
+</span><span class="cl">    thinking = <span class="k">false</span>;
+</span><span class="cl">    modal.hidden = <span class="k">true</span>;
+</span><span class="cl">    boardEl.classList.remove(<span class="s">&quot;is-thinking&quot;</span>);
+</span><span class="cl">    refreshBoard();
+</span><span class="cl">  }
+</span><span class="cl"> 
+</span><span class="cl">  <span class="k">function</span> syncDepthVisibility() {
+</span><span class="cl">    depthWrap.style.visibility =
+</span><span class="cl">      (typeEl.value === Oth.CompType.MINIMAX_AI) ? <span class="s">&quot;visible&quot;</span> : <span class="s">&quot;hidden&quot;</span>;
+</span><span class="cl">  }
+</span><span class="cl"> 
+</span><span class="cl">  newGameBtn.addEventListener(<span class="s">&quot;click&quot;</span>, newGame);
+</span><span class="cl">  playAgainBtn.addEventListener(<span class="s">&quot;click&quot;</span>, newGame);
+</span><span class="cl">  typeEl.addEventListener(<span class="s">&quot;change&quot;</span>, syncDepthVisibility);
+</span><span class="cl"> 
+</span><span class="cl">  document.addEventListener(<span class="s">&quot;keydown&quot;</span>, <span class="k">function</span> (e) {
+</span><span class="cl">    <span class="k">if</span> (e.key === <span class="s">&quot;Escape&quot;</span> &amp;&amp; !modal.hidden) modal.hidden = <span class="k">true</span>;
+</span><span class="cl">  });
+</span><span class="cl"> 
+</span><span class="cl">  setupBoard();
+</span><span class="cl">  syncDepthVisibility();
+</span><span class="cl">  refreshBoard();
+</span><span class="cl">})();
+</span></pre>
+</div>
+<div class="src-pane" id="p3" hidden data-path="games/othello/index.html" data-meta="85 LINES">
+<pre class="code"><span class="cl">&lt;!DOCTYPE html&gt;
+</span><span class="cl">&lt;html lang=&quot;en&quot;&gt;
+</span><span class="cl">&lt;head&gt;
+</span><span class="cl">&lt;meta charset=&quot;UTF-8&quot; /&gt;
+</span><span class="cl">&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot; /&gt;
+</span><span class="cl">&lt;title&gt;OTHELLO — The Arcade&lt;/title&gt;
+</span><span class="cl">&lt;link rel=&quot;icon&quot; href=&quot;../../assets/favicon.svg&quot; type=&quot;image/svg+xml&quot; /&gt;
+</span><span class="cl">&lt;link rel=&quot;preconnect&quot; href=&quot;https://fonts.googleapis.com&quot; /&gt;
+</span><span class="cl">&lt;link rel=&quot;preconnect&quot; href=&quot;https://fonts.gstatic.com&quot; crossorigin /&gt;
+</span><span class="cl">&lt;link href=&quot;https://fonts.googleapis.com/css2?family=Press+Start+2P&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap&quot; rel=&quot;stylesheet&quot; /&gt;
+</span><span class="cl">&lt;link rel=&quot;stylesheet&quot; href=&quot;../../css/arcade.css&quot; /&gt;
+</span><span class="cl">&lt;link rel=&quot;stylesheet&quot; href=&quot;style.css&quot; /&gt;
+</span><span class="cl">&lt;/head&gt;
+</span><span class="cl">&lt;body&gt;
+</span><span class="cl"> 
+</span><span class="cl">&lt;canvas id=&quot;bg-invaders&quot; aria-hidden=&quot;true&quot;&gt;&lt;/canvas&gt;
+</span><span class="cl">&lt;div class=&quot;bg-grid&quot; aria-hidden=&quot;true&quot;&gt;&lt;/div&gt;
+</span><span class="cl">&lt;div class=&quot;bg-vignette&quot; aria-hidden=&quot;true&quot;&gt;&lt;/div&gt;
+</span><span class="cl">&lt;div class=&quot;bg-scanlines&quot; aria-hidden=&quot;true&quot;&gt;&lt;/div&gt;
+</span><span class="cl"> 
+</span><span class="cl">&lt;div class=&quot;wrap&quot;&gt;
+</span><span class="cl"> 
+</span><span class="cl">  &lt;div class=&quot;shell-bar&quot;&gt;
+</span><span class="cl">    &lt;div&gt;
+</span><span class="cl">      &lt;h1 class=&quot;shell-title&quot;&gt;OTHELLO&lt;/h1&gt;
+</span><span class="cl">      &lt;p class=&quot;shell-sub&quot;&gt;Ported from Java Swing · You are black, you move first&lt;/p&gt;
+</span><span class="cl">    &lt;/div&gt;
+</span><span class="cl">    &lt;a class=&quot;btn btn-pink&quot; href=&quot;../../index.html&quot;&gt;◀ ARCADE&lt;/a&gt;
+</span><span class="cl">  &lt;/div&gt;
+</span><span class="cl"> 
+</span><span class="cl">  &lt;div class=&quot;cabinet&quot; data-center&gt;
+</span><span class="cl"> 
+</span><span class="cl">    &lt;div class=&quot;hud&quot;&gt;
+</span><span class="cl">      &lt;span class=&quot;hud-label&quot;&gt;OPPONENT:&lt;/span&gt;
+</span><span class="cl">      &lt;select class=&quot;arcade-select&quot; id=&quot;compType&quot; aria-label=&quot;Opponent type&quot;&gt;
+</span><span class="cl">        &lt;option value=&quot;GREEDY_CPU&quot;&gt;GREEDY CPU&lt;/option&gt;
+</span><span class="cl">        &lt;option value=&quot;MINIMAX_AI&quot; selected&gt;MINIMAX AI&lt;/option&gt;
+</span><span class="cl">      &lt;/select&gt;
+</span><span class="cl">      &lt;span id=&quot;depthWrap&quot;&gt;
+</span><span class="cl">        &lt;span class=&quot;hud-label&quot;&gt;DEPTH:&lt;/span&gt;
+</span><span class="cl">        &lt;input class=&quot;arcade-number&quot; id=&quot;depth&quot; type=&quot;number&quot; min=&quot;1&quot; max=&quot;6&quot; step=&quot;1&quot; value=&quot;3&quot; aria-label=&quot;Minimax search depth&quot; /&gt;
+</span><span class="cl">      &lt;/span&gt;
+</span><span class="cl">      &lt;button class=&quot;btn btn-amber&quot; type=&quot;button&quot; id=&quot;newGameBtn&quot;&gt;NEW GAME&lt;/button&gt;
+</span><span class="cl">    &lt;/div&gt;
+</span><span class="cl"> 
+</span><span class="cl">    &lt;div class=&quot;cabinet-screen&quot;&gt;
+</span><span class="cl">      &lt;div class=&quot;oth-board&quot; id=&quot;board&quot; role=&quot;grid&quot; aria-label=&quot;Othello board&quot;&gt;&lt;/div&gt;
+</span><span class="cl">    &lt;/div&gt;
+</span><span class="cl"> 
+</span><span class="cl">    &lt;div class=&quot;status-strip&quot; id=&quot;status&quot;&gt;YOUR TURN — YOU ARE BLACK&lt;/div&gt;
+</span><span class="cl">    &lt;div class=&quot;score-strip&quot; id=&quot;score&quot;&gt;YOU 2 · CPU 2&lt;/div&gt;
+</span><span class="cl"> 
+</span><span class="cl">    &lt;p class=&quot;oth-note&quot;&gt;
+</span><span class="cl">      &lt;strong&gt;GREEDY CPU&lt;/strong&gt; takes whichever move flips the most discs this turn —
+</span><span class="cl">      which is exactly the trap Othello sets for beginners.
+</span><span class="cl">      &lt;strong&gt;MINIMAX AI&lt;/strong&gt; searches ahead instead, assuming you&#x27;ll answer with
+</span><span class="cl">      your best reply. Depth 5–6 gets slow: it&#x27;s the same exhaustive search the
+</span><span class="cl">      Java version ran, and it thinks with the page held still.
+</span><span class="cl">    &lt;/p&gt;
+</span><span class="cl">  &lt;/div&gt;
+</span><span class="cl">&lt;/div&gt;
+</span><span class="cl"> 
+</span><span class="cl">&lt;footer class=&quot;arcade-footer&quot;&gt;
+</span><span class="cl">  &lt;p&gt;&lt;a href=&quot;../../index.html&quot;&gt;◀ BACK TO THE ARCADE&lt;/a&gt;&lt;/p&gt;
+</span><span class="cl">&lt;/footer&gt;
+</span><span class="cl"> 
+</span><span class="cl">&lt;div class=&quot;arcade-modal&quot; id=&quot;gameOverModal&quot; hidden&gt;
+</span><span class="cl">  &lt;div class=&quot;arcade-modal-box&quot;&gt;
+</span><span class="cl">    &lt;p class=&quot;arcade-modal-title&quot; id=&quot;gameOverTitle&quot;&gt;GAME OVER&lt;/p&gt;
+</span><span class="cl">    &lt;p class=&quot;arcade-modal-sub&quot; id=&quot;gameOverSubtitle&quot;&gt;&lt;/p&gt;
+</span><span class="cl">    &lt;div class=&quot;arcade-modal-actions&quot;&gt;
+</span><span class="cl">      &lt;button class=&quot;btn&quot; type=&quot;button&quot; id=&quot;playAgainBtn&quot;&gt;PLAY AGAIN&lt;/button&gt;
+</span><span class="cl">      &lt;a class=&quot;btn btn-pink&quot; href=&quot;../../index.html&quot;&gt;QUIT&lt;/a&gt;
+</span><span class="cl">    &lt;/div&gt;
+</span><span class="cl">  &lt;/div&gt;
+</span><span class="cl">&lt;/div&gt;
+</span><span class="cl"> 
+</span><span class="cl">&lt;script src=&quot;../../js/invaders-bg.js&quot;&gt;&lt;/script&gt;
+</span><span class="cl">&lt;script src=&quot;../../js/center-game.js&quot;&gt;&lt;/script&gt;
+</span><span class="cl">&lt;script src=&quot;js/othello-model.js&quot;&gt;&lt;/script&gt;
+</span><span class="cl">&lt;script src=&quot;js/othello-ai.js&quot;&gt;&lt;/script&gt;
+</span><span class="cl">&lt;script src=&quot;js/main.js&quot;&gt;&lt;/script&gt;
+</span><span class="cl">&lt;/body&gt;
+</span><span class="cl">&lt;/html&gt;
+</span></pre>
+</div>
+<div class="src-pane" id="p4" hidden data-path="games/othello/style.css" data-meta="114 LINES">
+<pre class="code"><span class="cl"><span class="c">/* Othello board. Shared chrome comes from ../../css/arcade.css */</span>
+</span><span class="cl"> 
+</span><span class="cl">.oth-board {
+</span><span class="cl">  display: grid;
+</span><span class="cl">  <span class="c">/* Two bugs lived here. There were no explicit ROWS at all, so the eight rows</span>
+</span><span class="cl"><span class="c">     were implicit `auto` tracks sized by their contents -- a row holding discs</span>
+</span><span class="cl"><span class="c">     came out taller than an empty one, which is why the cells weren&#x27;t square.</span>
+</span><span class="cl"><span class="c">     And repeat(8, 1fr) is really repeat(8, minmax(auto, 1fr)), whose `auto`</span>
+</span><span class="cl"><span class="c">     floor let a disc widen its column the same way. Explicit minmax(0, 1fr)</span>
+</span><span class="cl"><span class="c">     tracks in both directions fix both: 64 identical cells, always. */</span>
+</span><span class="cl">  grid-template-columns: repeat(<span class="n">8</span>, minmax(<span class="n">0</span>, <span class="n">1fr</span>));
+</span><span class="cl">  grid-template-rows: repeat(<span class="n">8</span>, minmax(<span class="n">0</span>, <span class="n">1fr</span>));
+</span><span class="cl">  gap: <span class="n">2px</span>;
+</span><span class="cl">  <span class="c">/* Width only -- the board holds its size rather than shrinking with the</span>
+</span><span class="cl"><span class="c">     window. center-game.js scrolls it into view instead. */</span>
+</span><span class="cl">  width: min(<span class="n">520px</span>, <span class="n">84vw</span>);
+</span><span class="cl">  aspect-ratio: <span class="n">1</span> / <span class="n">1</span>;
+</span><span class="cl">  margin: <span class="n">0</span> auto;
+</span><span class="cl">  background: #<span class="n">1e4a24</span>;
+</span><span class="cl">  border: <span class="n">4px</span> solid #<span class="n">1e4a24</span>;
+</span><span class="cl">  box-shadow: <span class="n">0</span> <span class="n">0</span> <span class="n">34px</span> rgba(<span class="n">124</span>, <span class="n">255</span>, <span class="n">107</span>, <span class="n">0.15</span>);
+</span><span class="cl">}
+</span><span class="cl"> 
+</span><span class="cl">.oth-board.is-thinking { cursor: progress; }
+</span><span class="cl">.oth-board.is-thinking .oth-cell { pointer-events: none; }
+</span><span class="cl"> 
+</span><span class="cl">.oth-cell {
+</span><span class="cl">  position: relative;
+</span><span class="cl">  <span class="c">/* A grid item&#x27;s automatic minimum is min-content; zeroing it stops the disc</span>
+</span><span class="cl"><span class="c">     inside from ever pushing its row or column wider. */</span>
+</span><span class="cl">  min-width: <span class="n">0</span>;
+</span><span class="cl">  min-height: <span class="n">0</span>;
+</span><span class="cl">  aspect-ratio: <span class="n">1</span> / <span class="n">1</span>;
+</span><span class="cl">  border: <span class="n">0</span>;
+</span><span class="cl">  padding: <span class="n">0</span>;
+</span><span class="cl">  background: #<span class="n">0b2a12</span>;
+</span><span class="cl">  cursor: pointer;
+</span><span class="cl">  display: flex;
+</span><span class="cl">  align-items: center;
+</span><span class="cl">  justify-content: center;
+</span><span class="cl">  transition: background <span class="n">0.12s</span>;
+</span><span class="cl">}
+</span><span class="cl"> 
+</span><span class="cl">.oth-cell:hover { background: #<span class="n">10381a</span>; }
+</span><span class="cl">.oth-cell:focus-visible { outline: <span class="n">2px</span> solid <span class="k">var</span>(--amber); outline-offset: -<span class="n">2px</span>; }
+</span><span class="cl"> 
+</span><span class="cl">.oth-disc {
+</span><span class="cl">  display: block;
+</span><span class="cl">  width: <span class="n">74</span>%;
+</span><span class="cl">  height: <span class="n">74</span>%;
+</span><span class="cl">  border-radius: <span class="n">50</span>%;
+</span><span class="cl">  transform: scale(<span class="n">0</span>);
+</span><span class="cl">  transition: transform <span class="n">0.16s</span> steps(<span class="n">3</span>), background <span class="n">0.16s</span>, border-color <span class="n">0.16s</span>;
+</span><span class="cl">}
+</span><span class="cl"> 
+</span><span class="cl"><span class="c">/* You. Dark disc with a neon rim so it reads on a dark board. */</span>
+</span><span class="cl">.oth-cell.has-black .oth-disc {
+</span><span class="cl">  transform: scale(<span class="n">1</span>);
+</span><span class="cl">  background: radial-gradient(circle at <span class="n">34</span>% <span class="n">30</span>%, #<span class="n">2a3a2c</span>, #<span class="n">050a06</span> <span class="n">70</span>%);
+</span><span class="cl">  border: <span class="n">2px</span> solid <span class="k">var</span>(--neon);
+</span><span class="cl">  box-shadow: <span class="n">0</span> <span class="n">0</span> <span class="n">12px</span> rgba(<span class="n">124</span>, <span class="n">255</span>, <span class="n">107</span>, <span class="n">0.5</span>);
+</span><span class="cl">}
+</span><span class="cl"> 
+</span><span class="cl"><span class="c">/* The computer. */</span>
+</span><span class="cl">.oth-cell.has-white .oth-disc {
+</span><span class="cl">  transform: scale(<span class="n">1</span>);
+</span><span class="cl">  background: radial-gradient(circle at <span class="n">34</span>% <span class="n">30</span>%, #ffffff, #b9d6b4 <span class="n">72</span>%);
+</span><span class="cl">  border: <span class="n">2px</span> solid #eafce6;
+</span><span class="cl">  box-shadow: <span class="n">0</span> <span class="n">0</span> <span class="n">12px</span> rgba(<span class="n">230</span>, <span class="n">255</span>, <span class="n">226</span>, <span class="n">0.45</span>);
+</span><span class="cl">}
+</span><span class="cl"> 
+</span><span class="cl"><span class="c">/* Legal move for you — the yellow dot from the Swing version. */</span>
+</span><span class="cl">.oth-cell.is-hint .oth-disc {
+</span><span class="cl">  transform: scale(<span class="n">0.52</span>);
+</span><span class="cl">  background: transparent;
+</span><span class="cl">  border: <span class="n">3px</span> solid <span class="k">var</span>(--amber);
+</span><span class="cl">  box-shadow: <span class="n">0</span> <span class="n">0</span> <span class="n">12px</span> rgba(<span class="n">255</span>, <span class="n">207</span>, <span class="n">74</span>, <span class="n">0.6</span>);
+</span><span class="cl">  animation: hintpulse <span class="n">1.4s</span> ease-<span class="k">in</span>-out infinite;
+</span><span class="cl">}
+</span><span class="cl"> 
+</span><span class="cl">@keyframes hintpulse {
+</span><span class="cl">  <span class="n">0</span>%, <span class="n">100</span>% { opacity: <span class="n">0.55</span>; }
+</span><span class="cl">  <span class="n">50</span>%      { opacity: <span class="n">1</span>; }
+</span><span class="cl">}
+</span><span class="cl"> 
+</span><span class="cl">.oth-cell.is-last::after {
+</span><span class="cl">  content: <span class="s">&quot;&quot;</span>;
+</span><span class="cl">  position: absolute;
+</span><span class="cl">  inset: <span class="n">3px</span>;
+</span><span class="cl">  border: <span class="n">2px</span> solid rgba(<span class="n">91</span>, <span class="n">224</span>, <span class="n">255</span>, <span class="n">0.75</span>);
+</span><span class="cl">  pointer-events: none;
+</span><span class="cl">}
+</span><span class="cl"> 
+</span><span class="cl">.oth-cell.is-illegal { background: #<span class="n">4a1414</span>; }
+</span><span class="cl"> 
+</span><span class="cl"><span class="c">/* --------------------------------------------------------------- controls */</span>
+</span><span class="cl"> 
+</span><span class="cl">.oth-note {
+</span><span class="cl">  font-size: <span class="n">12px</span>;
+</span><span class="cl">  color: <span class="k">var</span>(--ink-soft);
+</span><span class="cl">  text-align: center;
+</span><span class="cl">  margin: <span class="n">18px</span> auto <span class="n">0</span>;
+</span><span class="cl">  max-width: <span class="n">560px</span>;
+</span><span class="cl">  line-height: <span class="n">1.8</span>;
+</span><span class="cl">}
+</span><span class="cl"> 
+</span><span class="cl">.oth-note strong { color: <span class="k">var</span>(--neon); font-weight: <span class="n">500</span>; }
+</span><span class="cl"> 
+</span><span class="cl">#depthWrap {
+</span><span class="cl">  display: inline-flex;
+</span><span class="cl">  align-items: center;
+</span><span class="cl">  gap: <span class="n">8px</span>;
+</span><span class="cl">}
+</span></pre>
+</div>
+<div class="src-pane" id="p5" hidden data-path="java-source/othello/OthelloModel.java" data-meta="222 LINES">
+<pre class="code"><span class="cl"><span class="k">import</span> java.util.ArrayList;
+</span><span class="cl"><span class="k">import</span> java.util.List;
+</span><span class="cl"><span class="k">public</span> <span class="k">class</span> OthelloModel {
+</span><span class="cl">    <span class="k">private</span> <span class="k">final</span> <span class="k">int</span> size = <span class="n">8</span>;
+</span><span class="cl">    <span class="k">private</span> <span class="k">final</span> Square[][] board;
+</span><span class="cl">    <span class="k">private</span> Player currentPlayer;
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">public</span> OthelloModel(){
+</span><span class="cl">        board = <span class="k">new</span> Square[size][size];
+</span><span class="cl">        resetGame();
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">public</span> <span class="k">void</span> resetGame(){
+</span><span class="cl">        <span class="k">for</span> (<span class="k">int</span> i = <span class="n">0</span>; i &lt; size; i++){
+</span><span class="cl">            <span class="k">for</span> (<span class="k">int</span> j = <span class="n">0</span>; j &lt; size; j++){
+</span><span class="cl">                board[i][j] = Square.EMPTY;
+</span><span class="cl">            }
+</span><span class="cl">        }
+</span><span class="cl">        board[<span class="n">3</span>][<span class="n">3</span>] = Square.WHITE;
+</span><span class="cl">        board[<span class="n">3</span>][<span class="n">4</span>] = Square.BLACK;
+</span><span class="cl">        board[<span class="n">4</span>][<span class="n">3</span>] = Square.BLACK;
+</span><span class="cl">        board[<span class="n">4</span>][<span class="n">4</span>] = Square.WHITE;
+</span><span class="cl">        currentPlayer = Player.BLACK;
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">public</span> <span class="k">int</span> getSize(){
+</span><span class="cl">        <span class="k">return</span> size;
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">public</span> Square getSquare(<span class="k">int</span> row, <span class="k">int</span> column){
+</span><span class="cl">        <span class="k">return</span> board[row][column];
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">public</span> Player getCurrentPlayer() {
+</span><span class="cl">        <span class="k">return</span> currentPlayer;
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">public</span> <span class="k">void</span> switchTurn(){
+</span><span class="cl">        currentPlayer = opponent(currentPlayer);
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">public</span> Player opponent(Player player){
+</span><span class="cl">        <span class="k">if</span>(player == Player.BLACK){
+</span><span class="cl">            <span class="k">return</span> Player.WHITE;
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">return</span> Player.BLACK;
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">public</span> Square playersSquare(Player player){
+</span><span class="cl">        <span class="k">if</span> (player == Player.BLACK){
+</span><span class="cl">            <span class="k">return</span> Square.BLACK;
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">return</span> Square.WHITE;
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">public</span>  Square opponentSquareColor(Player player){
+</span><span class="cl">        <span class="k">if</span>( player == Player.BLACK){
+</span><span class="cl">            <span class="k">return</span> Square.WHITE;
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">return</span> Square.BLACK;
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">public</span>  <span class="k">boolean</span> isValidMove(<span class="k">int</span> row, <span class="k">int</span> column, Player player){
+</span><span class="cl">        <span class="k">if</span> (isInside(row, column) == <span class="k">false</span>){
+</span><span class="cl">            <span class="k">return</span> <span class="k">false</span>;
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">if</span> (board[row][column] != Square.EMPTY){
+</span><span class="cl">            <span class="k">return</span> <span class="k">false</span>;
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">int</span>[][] directions = getDirections();
+</span><span class="cl"> 
+</span><span class="cl">        <span class="k">for</span> (<span class="k">int</span>[] direction : directions){
+</span><span class="cl">            <span class="k">if</span> (capturesInAnyDirection(row, column, direction[<span class="n">0</span>], direction[<span class="n">1</span>], player) == <span class="k">true</span>){
+</span><span class="cl">                <span class="k">return</span> <span class="k">true</span>;
+</span><span class="cl">            }
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">return</span> <span class="k">false</span>;
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">private</span> <span class="k">boolean</span> isInside(<span class="k">int</span> row, <span class="k">int</span> column){
+</span><span class="cl">        <span class="k">if</span> ((row &gt;= <span class="n">0</span> &amp;&amp; row &lt; size &amp;&amp; column &gt;= <span class="n">0</span> &amp;&amp; column &lt; size) == <span class="k">true</span>){
+</span><span class="cl">            <span class="k">return</span> <span class="k">true</span>;
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">return</span> <span class="k">false</span>;
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">private</span> <span class="k">int</span>[][] getDirections(){
+</span><span class="cl">        <span class="k">int</span>[][] directions = <span class="k">new</span> <span class="k">int</span>[][]{ {-<span class="n">1</span>,-<span class="n">1</span>}, {-<span class="n">1</span>, <span class="n">0</span>}, {-<span class="n">1</span>, <span class="n">1</span>}, {<span class="n">0</span>,-<span class="n">1</span>}, {<span class="n">0</span>,<span class="n">1</span>}, {<span class="n">1</span>,-<span class="n">1</span>}, {<span class="n">1</span>, <span class="n">0</span>}, {<span class="n">1</span>,<span class="n">1</span>}};
+</span><span class="cl">        <span class="k">return</span> directions;
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">private</span> <span class="k">boolean</span> capturesInAnyDirection(<span class="k">int</span> row, <span class="k">int</span> column, <span class="k">int</span> directionRow, <span class="k">int</span> directionColumn, Player player){
+</span><span class="cl">        <span class="k">int</span> r = row + directionRow;
+</span><span class="cl">        <span class="k">int</span> c = column + directionColumn;
+</span><span class="cl">        Square opponent = opponentSquareColor(player);
+</span><span class="cl">        Square own = playersSquare(player);
+</span><span class="cl">        <span class="k">boolean</span> foundOpponent = <span class="k">false</span>;
+</span><span class="cl"> 
+</span><span class="cl">        <span class="k">while</span>(isInside(r,c) == <span class="k">true</span>){
+</span><span class="cl">            <span class="k">if</span>(board[r][c] == opponent){
+</span><span class="cl">                foundOpponent = <span class="k">true</span>;
+</span><span class="cl">            } <span class="k">else</span> <span class="k">if</span> (board[r][c] == own) {
+</span><span class="cl">                <span class="k">return</span> foundOpponent;
+</span><span class="cl">            } <span class="k">else</span>{
+</span><span class="cl">                <span class="k">return</span> <span class="k">false</span>;
+</span><span class="cl">            }
+</span><span class="cl">            r += directionRow;
+</span><span class="cl">            c += directionColumn;
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">return</span> <span class="k">false</span>;
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">private</span> <span class="k">void</span> flipInDirection(<span class="k">int</span> row, <span class="k">int</span> column, <span class="k">int</span> directionRow, <span class="k">int</span> directionColumn, Player player){
+</span><span class="cl">        <span class="k">int</span> r = row + directionRow;
+</span><span class="cl">        <span class="k">int</span> c = column + directionColumn;
+</span><span class="cl">        Square opponent = opponentSquareColor(player);
+</span><span class="cl">        Square own = playersSquare(player);
+</span><span class="cl"> 
+</span><span class="cl">        <span class="k">while</span>(isInside(r,c) == <span class="k">true</span> &amp;&amp; board[r][c] == opponent) {
+</span><span class="cl">            board[r][c] = own;
+</span><span class="cl">            r += directionRow;
+</span><span class="cl">            c += directionColumn;
+</span><span class="cl">        }
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">public</span> List&lt;Move&gt; getValidMoves(Player player){
+</span><span class="cl">        List&lt;Move&gt; moves = <span class="k">new</span> ArrayList&lt;&gt;();
+</span><span class="cl">        <span class="k">for</span> (<span class="k">int</span> i = <span class="n">0</span>; i &lt; size; i++){
+</span><span class="cl">            <span class="k">for</span> (<span class="k">int</span> j = <span class="n">0</span>; j &lt; size; j++){
+</span><span class="cl">                <span class="k">if</span> (isValidMove(i,j, player)){
+</span><span class="cl">                    moves.add(<span class="k">new</span> Move(i,j));
+</span><span class="cl">                }
+</span><span class="cl">            }
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">return</span> moves;
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">public</span> <span class="k">boolean</span> makeMove(<span class="k">int</span> row, <span class="k">int</span> column, Player player){
+</span><span class="cl">        <span class="k">if</span> (isValidMove(row, column, player) == <span class="k">false</span>){
+</span><span class="cl">            <span class="k">return</span> <span class="k">false</span>;
+</span><span class="cl">        }
+</span><span class="cl">        board[row][column] = playersSquare(player);
+</span><span class="cl">        <span class="k">int</span>[][] directions = getDirections();
+</span><span class="cl">        <span class="k">for</span> (<span class="k">int</span>[] direction : directions){
+</span><span class="cl">            <span class="k">if</span> (capturesInAnyDirection(row, column, direction[<span class="n">0</span>], direction[<span class="n">1</span>], player) == <span class="k">true</span>){
+</span><span class="cl">                flipInDirection(row, column, direction[<span class="n">0</span>], direction[<span class="n">1</span>], player);
+</span><span class="cl">            }
+</span><span class="cl">        }
+</span><span class="cl">        currentPlayer = opponent(player);
+</span><span class="cl">        handleSkips();
+</span><span class="cl">        <span class="k">return</span> <span class="k">true</span>;
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">private</span> <span class="k">void</span> handleSkips(){
+</span><span class="cl">        <span class="k">if</span> (getValidMoves(currentPlayer).isEmpty() &amp;&amp; isGameOver() == <span class="k">false</span>){
+</span><span class="cl">            currentPlayer = opponent(currentPlayer);
+</span><span class="cl">        }
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">public</span> <span class="k">int</span> countPieces(Player player){
+</span><span class="cl">        Square correctColor = playersSquare(player);
+</span><span class="cl">        <span class="k">int</span> count = <span class="n">0</span>;
+</span><span class="cl">        <span class="k">for</span> (<span class="k">int</span> i = <span class="n">0</span>; i &lt; size; i++){
+</span><span class="cl">            <span class="k">for</span> (<span class="k">int</span> j = <span class="n">0</span>; j &lt; size; j++){
+</span><span class="cl">                <span class="k">if</span> (board[i][j] == correctColor){
+</span><span class="cl">                    count++;
+</span><span class="cl">                }
+</span><span class="cl">            }
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">return</span> count;
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">public</span> <span class="k">boolean</span> isGameOver(){
+</span><span class="cl">        <span class="k">if</span> (getValidMoves(Player.BLACK).isEmpty() &amp;&amp; getValidMoves(Player.WHITE).isEmpty()){
+</span><span class="cl">            <span class="k">return</span> <span class="k">true</span>;
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">return</span> <span class="k">false</span>;
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">public</span> Player getWinner(){
+</span><span class="cl">        <span class="k">int</span> black = countPieces(Player.BLACK);
+</span><span class="cl">        <span class="k">int</span> white = countPieces(Player.WHITE);
+</span><span class="cl"> 
+</span><span class="cl">        <span class="k">if</span> (black &gt; white){
+</span><span class="cl">            <span class="k">return</span> Player.BLACK;
+</span><span class="cl">        } <span class="k">else</span> <span class="k">if</span> (white &gt; black) {
+</span><span class="cl">            <span class="k">return</span> Player.WHITE;
+</span><span class="cl">        } <span class="k">else</span> {
+</span><span class="cl">            <span class="k">return</span> <span class="k">null</span>;
+</span><span class="cl">        }
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">public</span> <span class="k">int</span> checkWhoIsWinning(Player player){
+</span><span class="cl">        Player opponent = opponent(player);
+</span><span class="cl">        <span class="k">int</span> score = countPieces(player) - countPieces(opponent);
+</span><span class="cl">        <span class="k">return</span> score;
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">public</span> OthelloModel copyBoard(){
+</span><span class="cl">        OthelloModel copy = <span class="k">new</span> OthelloModel();
+</span><span class="cl">        <span class="k">for</span> (<span class="k">int</span> i = <span class="n">0</span>; i &lt; size; i++) {
+</span><span class="cl">            <span class="k">for</span> (<span class="k">int</span> j = <span class="n">0</span>; j &lt; size; j++) {
+</span><span class="cl">                copy.board[i][j] = <span class="k">this</span>.board[i][j];
+</span><span class="cl">            }
+</span><span class="cl">        }
+</span><span class="cl">        copy.currentPlayer = <span class="k">this</span>.currentPlayer;
+</span><span class="cl">        <span class="k">return</span> copy;
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">public</span> <span class="k">enum</span> Square{
+</span><span class="cl">        EMPTY, WHITE, BLACK
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">public</span> <span class="k">enum</span> Player{
+</span><span class="cl">        WHITE, BLACK
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">public</span> <span class="k">static</span> <span class="k">class</span> Move {
+</span><span class="cl">        <span class="k">public</span> <span class="k">final</span> <span class="k">int</span> row;
+</span><span class="cl">        <span class="k">public</span> <span class="k">final</span> <span class="k">int</span> column;
+</span><span class="cl"> 
+</span><span class="cl">        <span class="k">public</span> Move(<span class="k">int</span> row, <span class="k">int</span> column) {
+</span><span class="cl">            <span class="k">this</span>.row = row;
+</span><span class="cl">            <span class="k">this</span>.column = column;
+</span><span class="cl">        }
+</span><span class="cl"> 
+</span><span class="cl">        @Override
+</span><span class="cl">        <span class="k">public</span> String toString(){
+</span><span class="cl">            <span class="k">return</span> <span class="s">&quot;(&quot;</span> + row + <span class="s">&quot;, &quot;</span> + column + <span class="s">&quot;)&quot;</span>;
+</span><span class="cl">        }
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">}
+</span></pre>
+</div>
+<div class="src-pane" id="p6" hidden data-path="java-source/othello/OthelloComputerAndAI.java" data-meta="96 LINES">
+<pre class="code"><span class="cl"><span class="k">import</span> java.util.List;
+</span><span class="cl"> 
+</span><span class="cl"><span class="k">public</span> <span class="k">class</span> OthelloComputerAndAI {
+</span><span class="cl">    <span class="k">public</span> <span class="k">enum</span> CompType {
+</span><span class="cl">        GREEDY_CPU, MINIMAX_AI
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">public</span> OthelloModel.Move getComputerMove(OthelloModel model, CompType compType, OthelloModel.Player computerPlayer, <span class="k">int</span> minimaxDepth){
+</span><span class="cl">        <span class="k">if</span>(compType == CompType.GREEDY_CPU){
+</span><span class="cl">            <span class="k">return</span> getGreedyCpuMove(model, computerPlayer);
+</span><span class="cl">        } <span class="k">else</span> {
+</span><span class="cl">            <span class="k">return</span> getMinimaxAiMove(model,computerPlayer,minimaxDepth);
+</span><span class="cl">        }
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">public</span> OthelloModel.Move getGreedyCpuMove(OthelloModel model, OthelloModel.Player player){
+</span><span class="cl">        List&lt;OthelloModel.Move&gt; moves = model.getValidMoves(player);
+</span><span class="cl">        <span class="k">if</span>(moves.isEmpty() == <span class="k">true</span>){
+</span><span class="cl">            <span class="k">return</span> <span class="k">null</span>;
+</span><span class="cl">        }
+</span><span class="cl">        OthelloModel.Move bestMove = <span class="k">null</span>;
+</span><span class="cl">        <span class="k">int</span> bestScore = Integer.MIN_VALUE;
+</span><span class="cl"> 
+</span><span class="cl">        <span class="k">for</span> (OthelloModel.Move move: moves){
+</span><span class="cl">            OthelloModel copy = model.copyBoard();
+</span><span class="cl">            <span class="k">int</span> scoreBeforeMove = copy.countPieces(player);
+</span><span class="cl">            copy.makeMove(move.row, move.column, player);
+</span><span class="cl">            <span class="k">int</span> scoreAfterMove = copy.countPieces(player);
+</span><span class="cl">            <span class="k">int</span> gainThisMove = scoreAfterMove - scoreBeforeMove;
+</span><span class="cl"> 
+</span><span class="cl">            <span class="k">if</span> (gainThisMove &gt; bestScore){
+</span><span class="cl">                bestScore = gainThisMove;
+</span><span class="cl">                bestMove = move;
+</span><span class="cl">            }
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">return</span> bestMove;
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">public</span> OthelloModel.Move getMinimaxAiMove(OthelloModel model, OthelloModel.Player player, <span class="k">int</span> minimaxDepth){
+</span><span class="cl">        List&lt;OthelloModel.Move&gt; moves = model.getValidMoves(player);
+</span><span class="cl">        <span class="k">if</span>(moves.isEmpty() == <span class="k">true</span>){
+</span><span class="cl">            <span class="k">return</span> <span class="k">null</span>;
+</span><span class="cl">        }
+</span><span class="cl">        OthelloModel.Move bestMove = <span class="k">null</span>;
+</span><span class="cl">        <span class="k">int</span> bestScore = Integer.MIN_VALUE;
+</span><span class="cl"> 
+</span><span class="cl">        <span class="k">for</span> (OthelloModel.Move move: moves) {
+</span><span class="cl">            OthelloModel copy = model.copyBoard();
+</span><span class="cl">            copy.makeMove(move.row, move.column, player);
+</span><span class="cl">            <span class="k">int</span> score = minimax(copy,minimaxDepth - <span class="n">1</span>, <span class="k">false</span>, player);
+</span><span class="cl">            <span class="k">if</span> (score &gt; bestScore){
+</span><span class="cl">                bestScore = score;
+</span><span class="cl">                bestMove = move;
+</span><span class="cl">            }
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">return</span> bestMove;
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">private</span> <span class="k">int</span> minimax(OthelloModel model, <span class="k">int</span> minimaxDepth, <span class="k">boolean</span> maxmize, OthelloModel.Player player){
+</span><span class="cl">        <span class="k">if</span> (minimaxDepth == <span class="n">0</span> || model.isGameOver() == <span class="k">true</span>){
+</span><span class="cl">            <span class="k">return</span> model.checkWhoIsWinning(player);
+</span><span class="cl">        }
+</span><span class="cl">        OthelloModel.Player currentPlayer = model.getCurrentPlayer();
+</span><span class="cl">        List&lt;OthelloModel.Move&gt; moves = model.getValidMoves(currentPlayer);
+</span><span class="cl">        <span class="k">if</span>(moves.isEmpty() == <span class="k">true</span>){
+</span><span class="cl">            OthelloModel copy = model.copyBoard();
+</span><span class="cl">            copy.switchTurn();
+</span><span class="cl">            <span class="k">return</span> minimax(copy, minimaxDepth - <span class="n">1</span>, !maxmize, player);
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">if</span> (maxmize == <span class="k">true</span>){
+</span><span class="cl">            <span class="k">return</span> getMaxScore(model, moves, minimaxDepth, player);
+</span><span class="cl">        } <span class="k">else</span> {
+</span><span class="cl">            <span class="k">return</span> getMinScore(model, moves, minimaxDepth, player);
+</span><span class="cl">        }
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">private</span> <span class="k">int</span> getMaxScore(OthelloModel model, List&lt;OthelloModel.Move&gt; moves, <span class="k">int</span> minimaxDepth, OthelloModel.Player player){
+</span><span class="cl">        <span class="k">int</span> bestScore = Integer.MIN_VALUE;
+</span><span class="cl">        <span class="k">for</span> (OthelloModel.Move move: moves) {
+</span><span class="cl">            OthelloModel copy = model.copyBoard();
+</span><span class="cl">            copy.makeMove(move.row, move.column, model.getCurrentPlayer());
+</span><span class="cl">            <span class="k">int</span> score = minimax(copy, minimaxDepth - <span class="n">1</span>, <span class="k">false</span>, player);
+</span><span class="cl">            bestScore = Math.max(bestScore, score);
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">return</span> bestScore;
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">private</span> <span class="k">int</span> getMinScore(OthelloModel model, List&lt;OthelloModel.Move&gt; moves, <span class="k">int</span> minimaxDepth, OthelloModel.Player player){
+</span><span class="cl">        <span class="k">int</span> bestScore = Integer.MAX_VALUE;
+</span><span class="cl">        <span class="k">for</span> (OthelloModel.Move move: moves) {
+</span><span class="cl">            OthelloModel copy = model.copyBoard();
+</span><span class="cl">            copy.makeMove(move.row, move.column, model.getCurrentPlayer());
+</span><span class="cl">            <span class="k">int</span> score = minimax(copy, minimaxDepth - <span class="n">1</span>, <span class="k">true</span>, player);
+</span><span class="cl">            bestScore = Math.min(bestScore, score);
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">return</span> bestScore;
+</span><span class="cl">    }
+</span><span class="cl">}
+</span></pre>
+</div>
+<div class="src-pane" id="p7" hidden data-path="java-source/othello/OthelloGUI.java" data-meta="194 LINES">
+<pre class="code"><span class="cl"><span class="k">import</span> javax.swing.*;
+</span><span class="cl"><span class="k">import</span> java.awt.*;
+</span><span class="cl"><span class="k">import</span> java.awt.event.ActionEvent;
+</span><span class="cl"> 
+</span><span class="cl"><span class="k">public</span> <span class="k">class</span> OthelloGUI <span class="k">extends</span> JFrame {
+</span><span class="cl">    <span class="k">private</span> <span class="k">final</span> OthelloModel model;
+</span><span class="cl">    <span class="k">private</span> <span class="k">final</span> OthelloComputerAndAI computerAndAI;
+</span><span class="cl">    <span class="k">private</span> <span class="k">final</span> JButton[][] buttons;
+</span><span class="cl">    <span class="k">private</span> JLabel statusLabel;
+</span><span class="cl">    <span class="k">private</span> JLabel scoreLabel;
+</span><span class="cl">    <span class="k">private</span> JComboBox&lt;OthelloComputerAndAI.CompType&gt; computerSelection;
+</span><span class="cl">    <span class="k">private</span> JSpinner depthSpinner;
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">private</span> <span class="k">static</span> <span class="k">final</span> OthelloModel.Player human = OthelloModel.Player.BLACK;
+</span><span class="cl">    <span class="k">private</span> <span class="k">static</span> <span class="k">final</span> OthelloModel.Player computer_And_Ai = OthelloModel.Player.WHITE;
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">public</span> OthelloGUI() {
+</span><span class="cl">        model = <span class="k">new</span> OthelloModel();
+</span><span class="cl">        computerAndAI = <span class="k">new</span> OthelloComputerAndAI();
+</span><span class="cl">        buttons = <span class="k">new</span> JButton[model.getSize()][model.getSize()];
+</span><span class="cl">        setupFrame();
+</span><span class="cl">        setupTopPanel();
+</span><span class="cl">        setupBoard();
+</span><span class="cl">        setupBottomPanel();
+</span><span class="cl">        refreshBoard();
+</span><span class="cl">        setVisible(<span class="k">true</span>);
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">private</span> <span class="k">void</span> setupFrame() {
+</span><span class="cl">        setTitle(<span class="s">&quot;Othello - Human vs Computer/AI&quot;</span>);
+</span><span class="cl">        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+</span><span class="cl">        setLayout(<span class="k">new</span> BorderLayout());
+</span><span class="cl">        setSize(<span class="n">750</span>, <span class="n">750</span>);
+</span><span class="cl">        setLocationRelativeTo(<span class="k">null</span>);
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">private</span> <span class="k">void</span> setupTopPanel() {
+</span><span class="cl">        JPanel topPanel = <span class="k">new</span> JPanel();
+</span><span class="cl">        computerSelection = <span class="k">new</span> JComboBox&lt;&gt;(OthelloComputerAndAI.CompType.values());
+</span><span class="cl">        depthSpinner = <span class="k">new</span> JSpinner(<span class="k">new</span> SpinnerNumberModel(<span class="n">3</span>, <span class="n">1</span>, <span class="n">6</span>, <span class="n">1</span>));
+</span><span class="cl">        JButton newGameButton = <span class="k">new</span> JButton(<span class="s">&quot;New Game&quot;</span>);
+</span><span class="cl">        newGameButton.addActionListener(e -&gt; {
+</span><span class="cl">            model.resetGame();
+</span><span class="cl">            refreshBoard();
+</span><span class="cl">        });
+</span><span class="cl">        topPanel.add(<span class="k">new</span> JLabel(<span class="s">&quot;Computer/AI: &quot;</span>));
+</span><span class="cl">        topPanel.add(computerSelection);
+</span><span class="cl">        topPanel.add(<span class="k">new</span> JLabel(<span class="s">&quot;Minimax Depth &quot;</span>));
+</span><span class="cl">        topPanel.add(depthSpinner);
+</span><span class="cl">        topPanel.add(newGameButton);
+</span><span class="cl">        add(topPanel, BorderLayout.NORTH);
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">private</span> <span class="k">void</span> setupBoard() {
+</span><span class="cl">        JPanel boardPanel = <span class="k">new</span> JPanel(<span class="k">new</span> GridLayout(<span class="n">8</span>, <span class="n">8</span>));
+</span><span class="cl">        boardPanel.setBackground(<span class="k">new</span> Color(<span class="n">0</span>, <span class="n">100</span>, <span class="n">0</span>));
+</span><span class="cl">        <span class="k">for</span> (<span class="k">int</span> i = <span class="n">0</span>; i &lt; model.getSize(); i++) {
+</span><span class="cl">            <span class="k">for</span> (<span class="k">int</span> j = <span class="n">0</span>; j &lt; model.getSize(); j++) {
+</span><span class="cl">                JButton button = <span class="k">new</span> JButton();
+</span><span class="cl">                button.setBackground((<span class="k">new</span> Color(<span class="n">0</span>, <span class="n">130</span>, <span class="n">0</span>)));
+</span><span class="cl">                button.setOpaque(<span class="k">true</span>);
+</span><span class="cl">                button.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+</span><span class="cl">                button.setFocusPainted(<span class="k">false</span>);
+</span><span class="cl">                <span class="k">final</span> <span class="k">int</span> row = i;
+</span><span class="cl">                <span class="k">final</span> <span class="k">int</span> column = j;
+</span><span class="cl">                button.addActionListener((ActionEvent e) -&gt; handleHumanMove(row, column)
+</span><span class="cl">                );
+</span><span class="cl">                buttons[i][j] = button;
+</span><span class="cl">                boardPanel.add(button);
+</span><span class="cl">            }
+</span><span class="cl">        }
+</span><span class="cl">        add(boardPanel, BorderLayout.CENTER);
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">private</span> <span class="k">void</span> setupBottomPanel() {
+</span><span class="cl">        JPanel bottomPanel = <span class="k">new</span> JPanel(<span class="k">new</span> GridLayout(<span class="n">2</span>, <span class="n">1</span>));
+</span><span class="cl">        statusLabel = <span class="k">new</span> JLabel(<span class="s">&quot;Your turn. You are Black.&quot;</span>, SwingConstants.CENTER);
+</span><span class="cl">        scoreLabel = <span class="k">new</span> JLabel(<span class="s">&quot;&quot;</span>, SwingConstants.CENTER);
+</span><span class="cl">        bottomPanel.add(statusLabel);
+</span><span class="cl">        bottomPanel.add(scoreLabel);
+</span><span class="cl">        add(bottomPanel, BorderLayout.SOUTH);
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">private</span> <span class="k">void</span> handleHumanMove(<span class="k">int</span> row, <span class="k">int</span> column) {
+</span><span class="cl">        <span class="k">if</span> (model.isGameOver() == <span class="k">true</span>) {
+</span><span class="cl">            <span class="k">return</span>;
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">if</span> (model.getCurrentPlayer() != human) {
+</span><span class="cl">            <span class="k">return</span>;
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">boolean</span> moveMade = model.makeMove(row, column, human);
+</span><span class="cl">        <span class="k">if</span> (moveMade == <span class="k">false</span>) {
+</span><span class="cl">            JOptionPane.showMessageDialog(<span class="k">this</span>, <span class="s">&quot;Can&#x27;t do that man&quot;</span>);
+</span><span class="cl">            <span class="k">return</span>;
+</span><span class="cl">        }
+</span><span class="cl">        refreshBoard();
+</span><span class="cl">        <span class="k">if</span> ((model.isGameOver() == <span class="k">false</span>) &amp;&amp; (model.getCurrentPlayer() == computer_And_Ai)) {
+</span><span class="cl">            computerMove();
+</span><span class="cl">        }
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">private</span> <span class="k">void</span> computerMove() {
+</span><span class="cl">        Timer timer = <span class="k">new</span> Timer(<span class="n">500</span>, e -&gt; {
+</span><span class="cl">            OthelloComputerAndAI.CompType theType = (OthelloComputerAndAI.CompType) computerSelection.getSelectedItem();
+</span><span class="cl">            <span class="k">int</span> maximizeDepth = (<span class="k">int</span>) depthSpinner.getValue();
+</span><span class="cl">            OthelloModel.Move move = computerAndAI.getComputerMove(model, theType, computer_And_Ai, maximizeDepth);
+</span><span class="cl">            <span class="k">if</span> (move != <span class="k">null</span>) {
+</span><span class="cl">                model.makeMove(move.row, move.column, computer_And_Ai);
+</span><span class="cl">            }
+</span><span class="cl">            refreshBoard();
+</span><span class="cl">            <span class="k">if</span> (model.isGameOver() == <span class="k">true</span>) {
+</span><span class="cl">                showGameOverMessage();
+</span><span class="cl">            }
+</span><span class="cl">        });
+</span><span class="cl">        timer.setRepeats(<span class="k">false</span>);
+</span><span class="cl">        timer.start();
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">private</span> <span class="k">void</span> refreshBoard() {
+</span><span class="cl">        <span class="k">for</span> (<span class="k">int</span> i = <span class="n">0</span>; i &lt; model.getSize(); i++) {
+</span><span class="cl">            <span class="k">for</span> (<span class="k">int</span> j = <span class="n">0</span>; j &lt; model.getSize(); j++) {
+</span><span class="cl">                JButton button = buttons[i][j];
+</span><span class="cl">                button.setText(<span class="s">&quot;&quot;</span>);
+</span><span class="cl">                button.setIcon(<span class="k">null</span>);
+</span><span class="cl">                OthelloModel.Square square = model.getSquare(i, j);
+</span><span class="cl">                <span class="k">if</span> (square == OthelloModel.Square.BLACK) {
+</span><span class="cl">                    displayBlackPiece(button);
+</span><span class="cl">                } <span class="k">else</span> <span class="k">if</span> (square == OthelloModel.Square.WHITE) {
+</span><span class="cl">                    displayWhitePiece(button);
+</span><span class="cl">                } <span class="k">else</span> <span class="k">if</span> (model.getCurrentPlayer() == human &amp;&amp; model.isValidMove(i, j, human)) {
+</span><span class="cl">                    displayPossibleMove(button);
+</span><span class="cl">                } <span class="k">else</span> {
+</span><span class="cl">                    displayEmptySquare(button);
+</span><span class="cl">                }
+</span><span class="cl">            }
+</span><span class="cl">        }
+</span><span class="cl">        updateScoreLabel();
+</span><span class="cl">        updateStatusLabel();
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">private</span> <span class="k">void</span> displayBlackPiece(JButton button){
+</span><span class="cl">        button.setText(<span class="s">&quot;●&quot;</span>);
+</span><span class="cl">        button.setFont(<span class="k">new</span> Font(<span class="s">&quot;Arial&quot;</span>, Font.BOLD, <span class="n">42</span>));
+</span><span class="cl">        button.setForeground(Color.BLACK);
+</span><span class="cl">        button.setBackground(<span class="k">new</span> Color(<span class="n">0</span>,<span class="n">130</span>,<span class="n">0</span>));
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">private</span> <span class="k">void</span> displayWhitePiece(JButton button){
+</span><span class="cl">        button.setText(<span class="s">&quot;●&quot;</span>);
+</span><span class="cl">        button.setFont(<span class="k">new</span> Font(<span class="s">&quot;Arial&quot;</span>, Font.BOLD, <span class="n">42</span>));
+</span><span class="cl">        button.setForeground(Color.WHITE);
+</span><span class="cl">        button.setBackground(<span class="k">new</span> Color(<span class="n">0</span>,<span class="n">130</span>,<span class="n">0</span>));
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">private</span> <span class="k">void</span> displayPossibleMove(JButton button){
+</span><span class="cl">        button.setText(<span class="s">&quot;●&quot;</span>);
+</span><span class="cl">        button.setFont(<span class="k">new</span> Font(<span class="s">&quot;Arial&quot;</span>, Font.BOLD, <span class="n">42</span>));
+</span><span class="cl">        button.setForeground(Color.YELLOW);
+</span><span class="cl">        button.setBackground(<span class="k">new</span> Color(<span class="n">0</span>,<span class="n">130</span>,<span class="n">0</span>));
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">private</span> <span class="k">void</span> displayEmptySquare(JButton button){
+</span><span class="cl">        button.setText(<span class="s">&quot;&quot;</span>);
+</span><span class="cl">        button.setBackground(<span class="k">new</span> Color(<span class="n">0</span>,<span class="n">130</span>,<span class="n">0</span>));
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">private</span> <span class="k">void</span> updateScoreLabel(){
+</span><span class="cl">        <span class="k">int</span> blackScore = model.countPieces(OthelloModel.Player.BLACK);
+</span><span class="cl">        <span class="k">int</span> whiteScore = model.countPieces(OthelloModel.Player.WHITE);
+</span><span class="cl">        scoreLabel.setText(<span class="s">&quot;Black: &quot;</span> + blackScore + <span class="s">&quot;   White: &quot;</span> + whiteScore);
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">private</span> <span class="k">void</span> updateStatusLabel(){
+</span><span class="cl">        <span class="k">if</span> (model.isGameOver() == <span class="k">true</span>){
+</span><span class="cl">            showGameOverMessage();
+</span><span class="cl">        } <span class="k">else</span> <span class="k">if</span> (model.getCurrentPlayer() == human) {
+</span><span class="cl">            statusLabel.setText(<span class="s">&quot;Your Turn. You are Black&quot;</span>);
+</span><span class="cl">        } <span class="k">else</span> {
+</span><span class="cl">            statusLabel.setText(<span class="s">&quot;Computer thinking...&quot;</span>);
+</span><span class="cl">        }
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">private</span> <span class="k">void</span> showGameOverMessage(){
+</span><span class="cl">        OthelloModel.Player winner = model.getWinner();
+</span><span class="cl">        String message = <span class="s">&quot;Game Over! &quot;</span>;
+</span><span class="cl">        <span class="k">if</span> (winner == <span class="k">null</span>){
+</span><span class="cl">            message = message + <span class="s">&quot;Tie game!!&quot;</span>;
+</span><span class="cl">        } <span class="k">else</span> <span class="k">if</span> (winner == human) {
+</span><span class="cl">            message = message + <span class="s">&quot;YOU WIN!!! CONGRATS!!!&quot;</span>;
+</span><span class="cl">        } <span class="k">else</span> {
+</span><span class="cl">            message = message + <span class="s">&quot;Computer won :(&quot;</span>;
+</span><span class="cl">        }
+</span><span class="cl">        statusLabel.setText(message);
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">public</span> <span class="k">static</span> <span class="k">void</span> main(String[] args){
+</span><span class="cl">        SwingUtilities.invokeLater(OthelloGUI::<span class="k">new</span>);
+</span><span class="cl">    }
+</span><span class="cl">}
+</span></pre>
+</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var buttons = [].slice.call(document.querySelectorAll(".src-file"));
+  var pathEl = document.getElementById("srcPath");
+  var metaEl = document.getElementById("srcMeta");
+
+  function show(id) {
+    buttons.forEach(function (b) {
+      var on = b.getAttribute("data-pane") === id;
+      b.classList.toggle("is-active", on);
+    });
+    [].slice.call(document.querySelectorAll(".src-pane")).forEach(function (p) {
+      p.hidden = p.id !== id;
+      if (!p.hidden) {
+        pathEl.textContent = p.getAttribute("data-path");
+        metaEl.textContent = p.getAttribute("data-meta");
+      }
+    });
+  }
+
+  buttons.forEach(function (b) {
+    b.addEventListener("click", function () {
+      show(b.getAttribute("data-pane"));
+      // Switching files while scrolled deep into a long one used to drop you
+      // into the middle of the new file. Pull the top of the viewer back into
+      // view, but only when it has actually scrolled off.
+      var viewer = document.querySelector(".src-viewer");
+      if (viewer.getBoundingClientRect().top < 0) {
+        viewer.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    });
+  });
+
+  if (buttons.length) show(buttons[0].getAttribute("data-pane"));
+})();
+</script>
+
+<footer class="arcade-footer">
+  <p><a href="../index.html">&#9664; BACK TO THE ARCADE</a></p>
+</footer>
+
+<script src="../js/invaders-bg.js"></script>
+</body>
+</html>

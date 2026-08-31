@@ -1,0 +1,360 @@
+/* ==========================================================================
+   THE ARCADE — shared theme
+   Black + neon green, chunky pixel edges, a little bit cute.
+   Used by the landing page and by every game shell.
+   ========================================================================== */
+
+:root {
+  /* ---- palette ---- */
+  --bg:          #04060a;
+  --bg-panel:    #0a1110;
+  --bg-panel-2:  #0e1a16;
+  --grid-line:   rgba(124, 255, 107, 0.06);
+
+  --neon:        #7cff6b;   /* the invader green from the cabinet photo */
+  --neon-hot:    #b7ff9f;   /* brighter, for text that has to be read      */
+  --neon-dim:    #3f8c39;
+  --neon-glow:   rgba(124, 255, 107, 0.55);
+
+  --amber:       #ffcf4a;   /* marquee lettering */
+  --pink:        #ff63c8;   /* cabinet buttons  */
+  --cyan:        #5be0ff;
+
+  --ink:         #dff7da;
+  --ink-soft:    #8fae8b;
+
+  /* ---- type ---- */
+  --pixel: "Press Start 2P", "Courier New", monospace;
+  --mono:  "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --radius: 4px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--mono);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* --------------------------------------------------------------------------
+   Background layers: starfield canvas + faint grid + CRT scanlines
+   -------------------------------------------------------------------------- */
+
+#bg-invaders {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.bg-grid {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse 90% 70% at 50% 40%, #000 30%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 90% 70% at 50% 40%, #000 30%, transparent 100%);
+}
+
+.bg-scanlines {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0px,
+    rgba(0, 0, 0, 0) 2px,
+    rgba(0, 0, 0, 0.28) 3px,
+    rgba(0, 0, 0, 0.28) 4px
+  );
+  opacity: 0.5;
+  mix-blend-mode: multiply;
+}
+
+.bg-vignette {
+  position: fixed;
+  inset: 0;
+  z-index: 899;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 45%, rgba(0, 0, 0, 0.75) 100%);
+}
+
+/* Respect people who don't want motion. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Shared bits
+   -------------------------------------------------------------------------- */
+
+.wrap {
+  position: relative;
+  z-index: 10;
+  width: min(1120px, 92vw);
+  margin: 0 auto;
+}
+
+.neon-text {
+  color: var(--neon);
+  text-shadow:
+    0 0 6px var(--neon-glow),
+    0 0 22px rgba(124, 255, 107, 0.35);
+}
+
+/* Chunky pixel-corner frame, drawn with clip-path so it has no anti-aliased
+   curves — everything on this site should look like it was made of squares. */
+.pixel-frame {
+  position: relative;
+  background: var(--bg-panel);
+  border: 2px solid var(--neon-dim);
+  clip-path: polygon(
+    0 8px, 4px 8px, 4px 4px, 8px 4px, 8px 0,
+    calc(100% - 8px) 0, calc(100% - 8px) 4px, calc(100% - 4px) 4px, calc(100% - 4px) 8px, 100% 8px,
+    100% calc(100% - 8px), calc(100% - 4px) calc(100% - 8px), calc(100% - 4px) calc(100% - 4px), calc(100% - 8px) calc(100% - 4px), calc(100% - 8px) 100%,
+    8px 100%, 8px calc(100% - 4px), 4px calc(100% - 4px), 4px calc(100% - 8px), 0 calc(100% - 8px)
+  );
+}
+
+/* --------------------------------------------------------------------------
+   Buttons
+   -------------------------------------------------------------------------- */
+
+.btn {
+  font-family: var(--pixel);
+  font-size: 10px;
+  line-height: 1.6;
+  letter-spacing: 0.04em;
+  color: var(--neon);
+  background: #0b1a10;
+  border: 2px solid var(--neon-dim);
+  padding: 12px 16px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: transform 0.08s steps(2), background 0.12s, border-color 0.12s, color 0.12s;
+  box-shadow: 0 3px 0 #051007;
+}
+
+.btn:hover,
+.btn:focus-visible {
+  background: #102a17;
+  border-color: var(--neon);
+  color: var(--neon-hot);
+  transform: translateY(-2px);
+  outline: none;
+}
+
+.btn:active { transform: translateY(1px); box-shadow: 0 1px 0 #051007; }
+
+.btn.is-active {
+  background: var(--neon);
+  color: #04140a;
+  border-color: var(--neon-hot);
+  text-shadow: none;
+}
+
+.btn-pink  { color: var(--pink);  border-color: #8c3a6f; }
+.btn-pink:hover  { color: #ffc2ea; border-color: var(--pink); background: #2a0f22; }
+.btn-amber { color: var(--amber); border-color: #8c7226; }
+.btn-amber:hover { color: #ffe8a8; border-color: var(--amber); background: #2a2410; }
+
+/* --------------------------------------------------------------------------
+   Game shell (the chrome around each ported game)
+   -------------------------------------------------------------------------- */
+
+.shell-bar {
+  position: relative;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  /* Trimmed from 18/22 — every pixel of chrome above the cabinet is a pixel
+     of board that slides off the bottom on a short window. */
+  padding: 14px 0 16px;
+}
+
+.shell-title {
+  font-family: var(--pixel);
+  font-size: clamp(13px, 2.2vw, 20px);
+  margin: 0;
+  color: var(--neon);
+  text-shadow: 0 0 10px var(--neon-glow);
+}
+
+.shell-sub {
+  font-size: 12px;
+  color: var(--ink-soft);
+  margin: 6px 0 0;
+}
+
+.cabinet {
+  position: relative;
+  z-index: 10;
+  margin: 0 auto 40px;
+  padding: 16px 20px 18px;
+  background:
+    linear-gradient(180deg, #0d1512 0%, #070c0a 100%);
+  border: 2px solid var(--neon-dim);
+  box-shadow:
+    0 0 0 4px #04080600,
+    0 0 40px rgba(124, 255, 107, 0.12),
+    inset 0 0 60px rgba(0, 0, 0, 0.6);
+}
+
+.cabinet-screen {
+  background: #000;
+  border: 2px solid #16301c;
+  padding: 18px;
+  position: relative;
+}
+
+.hud {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.hud-label {
+  font-family: var(--pixel);
+  font-size: 9px;
+  color: var(--ink-soft);
+  letter-spacing: 0.05em;
+}
+
+.status-strip {
+  font-family: var(--pixel);
+  font-size: 11px;
+  text-align: center;
+  color: var(--neon-hot);
+  padding: 14px 8px 4px;
+  min-height: 22px;
+  letter-spacing: 0.03em;
+}
+
+.score-strip {
+  font-family: var(--pixel);
+  font-size: 10px;
+  text-align: center;
+  color: var(--ink-soft);
+  padding: 6px 8px 2px;
+}
+
+select.arcade-select,
+input.arcade-number {
+  font-family: var(--pixel);
+  font-size: 9px;
+  color: var(--neon);
+  background: #0b1a10;
+  border: 2px solid var(--neon-dim);
+  padding: 9px 10px;
+  cursor: pointer;
+}
+
+select.arcade-select:focus-visible,
+input.arcade-number:focus-visible { outline: 2px solid var(--neon); }
+
+input.arcade-number { width: 62px; text-align: center; }
+
+/* Little "coin slot" footer on every page */
+.arcade-footer {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  font-family: var(--pixel);
+  font-size: 9px;
+  color: #2f5a2c;
+  padding: 26px 0 40px;
+  letter-spacing: 0.06em;
+}
+
+.arcade-footer a { color: var(--neon-dim); text-decoration: none; }
+.arcade-footer a:hover { color: var(--neon); }
+
+.blink { animation: blink 1.1s steps(2, start) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+
+/* --------------------------------------------------------------------------
+   Modal used by the ported games (stands in for Swing's JOptionPane)
+   -------------------------------------------------------------------------- */
+
+.arcade-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(2, 6, 4, 0.86);
+  padding: 20px;
+}
+
+.arcade-modal[hidden] { display: none; }
+
+.arcade-modal-box {
+  background: #071009;
+  border: 2px solid var(--neon);
+  box-shadow: 0 0 40px rgba(124, 255, 107, 0.3);
+  padding: 30px 28px;
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+  animation: pop 0.18s steps(3);
+}
+
+@keyframes pop {
+  from { transform: scale(0.86); }
+  to   { transform: scale(1); }
+}
+
+.arcade-modal-title {
+  font-family: var(--pixel);
+  font-size: 14px;
+  color: var(--neon);
+  margin: 0 0 14px;
+  text-shadow: 0 0 12px var(--neon-glow);
+  line-height: 1.6;
+}
+
+.arcade-modal-sub {
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin: 0 0 22px;
+  line-height: 1.7;
+}
+
+.arcade-modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}

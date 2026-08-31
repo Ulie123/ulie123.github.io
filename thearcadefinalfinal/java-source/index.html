@@ -1,0 +1,1531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>JAVA SOURCE SOURCE — The Arcade</title>
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../css/arcade.css" />
+<link rel="stylesheet" href="../css/home.css" />
+<link rel="stylesheet" href="../css/source.css" />
+</head>
+<body>
+
+<canvas id="bg-invaders" aria-hidden="true"></canvas>
+<div class="bg-grid" aria-hidden="true"></div>
+<div class="bg-vignette" aria-hidden="true"></div>
+<div class="bg-scanlines" aria-hidden="true"></div>
+
+<div class="wrap">
+
+  <div class="shell-bar">
+    <div>
+      <h1 class="shell-title">JAVA SOURCE</h1>
+      <p class="shell-sub">The Swing programs the ports came from</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <a class="btn btn-amber" href="../source/index.html">&#9654; READ THE PORTS</a>
+      <a class="btn btn-pink" href="../index.html">&#9664; ARCADE</a>
+    </div>
+  </div>
+
+  <div class="src-intro">
+      <p>These are the programs the browser versions were translated from. The code is exactly as it was written &mdash; only the comments have been taken out, which changes nothing about how it runs. Every file here has a JavaScript counterpart; the note under each filename says which.</p>
+      <p>They're reference material, not part of the running site. To compile them the usual way: <code>javac *.java</code>, then <code>java T3Launcher buttons</code>, <code>java OthelloGUI</code>, or <code>java PongLauncher solo</code>.</p>
+      <p>To read a Java file side by side with the JavaScript it became, open that game on the <a href="../source/index.html">ports page</a> instead &mdash; both versions are listed there together.</p>
+  </div>
+
+  <div class="src-layout">
+    <nav class="src-files" aria-label="Files">
+      <p class="src-group">TIC-TAC-TOE</p>
+      <button class="src-file" type="button" data-pane="p0">T3Launcher.java<span class="src-note">→ games/tictactoe/js/main.js</span></button>
+      <button class="src-file" type="button" data-pane="p1">IT3Model.java<span class="src-note">the model interface</span></button>
+      <button class="src-file" type="button" data-pane="p2">T3Model.java<span class="src-note">→ js/t3-model.js</span></button>
+      <button class="src-file" type="button" data-pane="p3">Player.java<span class="src-note">enum X / O / NONE</span></button>
+      <button class="src-file" type="button" data-pane="p4">ButtonGUI.java<span class="src-note">→ js/button-ui.js</span></button>
+      <button class="src-file" type="button" data-pane="p5">PaintGUI.java<span class="src-note">→ js/paint-ui.js</span></button>
+      <button class="src-file" type="button" data-pane="p6">ConsoleUI.java<span class="src-note">→ js/console-ui.js</span></button>
+      <p class="src-group">OTHELLO</p>
+      <button class="src-file" type="button" data-pane="p7">OthelloModel.java<span class="src-note">→ js/othello-model.js</span></button>
+      <button class="src-file" type="button" data-pane="p8">OthelloComputerAndAI.java<span class="src-note">→ js/othello-ai.js</span></button>
+      <button class="src-file" type="button" data-pane="p9">OthelloGUI.java<span class="src-note">→ js/main.js</span></button>
+      <p class="src-group">PONG</p>
+      <button class="src-file" type="button" data-pane="p10">GameConstants.java<span class="src-note">→ js/game-constants.js</span></button>
+      <button class="src-file" type="button" data-pane="p11">PongModel.java<span class="src-note">→ js/pong-model.js</span></button>
+      <button class="src-file" type="button" data-pane="p12">PongPanel.java<span class="src-note">→ js/pong-panel.js</span></button>
+      <button class="src-file" type="button" data-pane="p13">PongLauncher.java<span class="src-note">→ js/main.js</span></button>
+    </nav>
+
+    <div class="src-viewer">
+      <div class="src-head">
+        <span class="src-path" id="srcPath"></span>
+        <span class="src-meta" id="srcMeta"></span>
+      </div>
+      <div class="src-body">
+<div class="src-pane" id="p0" hidden data-path="java-source/tictactoe/T3Launcher.java" data-meta="50 LINES">
+<pre class="code"><span class="cl"><span class="k">import</span> java.util.Locale;
+</span><span class="cl"> 
+</span><span class="cl"><span class="k">public</span> <span class="k">class</span> T3Launcher {
+</span><span class="cl">    <span class="k">public</span> <span class="k">static</span> <span class="k">void</span> main(String[] args){
+</span><span class="cl">        <span class="k">if</span> (args.length &lt; <span class="n">1</span>){
+</span><span class="cl">            printUsage();
+</span><span class="cl">            <span class="k">return</span>;
+</span><span class="cl">        }
+</span><span class="cl">        String mode = args[<span class="n">0</span>].toLowerCase();
+</span><span class="cl">        <span class="k">int</span> size = <span class="n">450</span>;
+</span><span class="cl">        <span class="k">if</span> (args.length &gt;= <span class="n">2</span>) {
+</span><span class="cl">            <span class="k">try</span> {
+</span><span class="cl">                size = Integer.parseInt(args[<span class="n">1</span>]);
+</span><span class="cl">                <span class="k">if</span> (size &lt; <span class="n">200</span>) {
+</span><span class="cl">                    size = <span class="n">200</span>;
+</span><span class="cl">                }
+</span><span class="cl">            } <span class="k">catch</span> (NumberFormatException e) {
+</span><span class="cl"> 
+</span><span class="cl">            }
+</span><span class="cl">        }
+</span><span class="cl">            IT3Model model = <span class="k">new</span> T3Model();
+</span><span class="cl"> 
+</span><span class="cl">            <span class="k">switch</span> (mode){
+</span><span class="cl">                <span class="k">case</span> <span class="s">&quot;buttons&quot;</span>:
+</span><span class="cl">                    <span class="k">new</span> ButtonGUI(model, size);
+</span><span class="cl">                    <span class="k">break</span>;
+</span><span class="cl">                <span class="k">case</span> <span class="s">&quot;paint&quot;</span>:
+</span><span class="cl">                    <span class="k">new</span> PaintGUI(model, size);
+</span><span class="cl">                    <span class="k">break</span>;
+</span><span class="cl">                <span class="k">case</span> <span class="s">&quot;console&quot;</span>:
+</span><span class="cl">                    <span class="k">new</span> ConsoleUI(model);
+</span><span class="cl">                    <span class="k">break</span>;
+</span><span class="cl">                <span class="k">default</span>:
+</span><span class="cl">                    printUsage();
+</span><span class="cl">            }
+</span><span class="cl">        }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">private</span> <span class="k">static</span> <span class="k">void</span> printUsage(){
+</span><span class="cl">        System.out.println(<span class="s">&quot;Usage:&quot;</span>);
+</span><span class="cl">        System.out.println(<span class="s">&quot;java T3 Launchers buttons [size]&quot;</span>);
+</span><span class="cl">        System.out.println(<span class="s">&quot;java T3Launcher paint [size]&quot;</span>);
+</span><span class="cl">        System.out.println(<span class="s">&quot;java T3Launcher console&quot;</span>);
+</span><span class="cl">        System.out.println();
+</span><span class="cl">        System.out.println(<span class="s">&quot;Examples:&quot;</span>);
+</span><span class="cl">        System.out.println(<span class="s">&quot;java T3Launcher buttons&quot;</span>);
+</span><span class="cl">        System.out.println(<span class="s">&quot;java T3Launcher paint 600&quot;</span>);
+</span><span class="cl">        System.out.println(<span class="s">&quot;java T3Launcher console&quot;</span>);
+</span><span class="cl">    }
+</span><span class="cl">}
+</span></pre>
+</div>
+<div class="src-pane" id="p1" hidden data-path="java-source/tictactoe/IT3Model.java" data-meta="11 LINES">
+<pre class="code"><span class="cl"><span class="k">public</span> <span class="k">interface</span> IT3Model {
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">boolean</span> move(<span class="k">int</span> row, <span class="k">int</span> col);
+</span><span class="cl">    Player getCurrentPlayer();
+</span><span class="cl">    Player getWinner();
+</span><span class="cl">    <span class="k">boolean</span> isGameOver();
+</span><span class="cl">    <span class="k">boolean</span> isTie();
+</span><span class="cl">    Player getCell(<span class="k">int</span> row, <span class="k">int</span> col);
+</span><span class="cl">    <span class="k">void</span> reset();
+</span><span class="cl">}
+</span></pre>
+</div>
+<div class="src-pane" id="p2" hidden data-path="java-source/tictactoe/T3Model.java" data-meta="146 LINES">
+<pre class="code"><span class="cl"><span class="k">import</span> java.io.Serializable;
+</span><span class="cl"><span class="k">import</span> java.util.ArrayList;
+</span><span class="cl"><span class="k">import</span> java.util.List;
+</span><span class="cl"><span class="k">import</span> java.util.Random;
+</span><span class="cl"> 
+</span><span class="cl"><span class="k">public</span> <span class="k">class</span> T3Model <span class="k">implements</span> IT3Model {
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">public</span> <span class="k">enum</span> GameState {Still_Going, X_WON, O_WON, Tie_Game};
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">private</span> <span class="k">final</span> Player[][] board;
+</span><span class="cl">    <span class="k">private</span> Player player;
+</span><span class="cl">    <span class="k">private</span> GameState gameState;
+</span><span class="cl">    <span class="k">public</span> T3Model(){
+</span><span class="cl">        board = <span class="k">new</span> Player[<span class="n">3</span>][<span class="n">3</span>];
+</span><span class="cl">        reset();
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    @Override
+</span><span class="cl">    <span class="k">public</span> <span class="k">boolean</span> move(<span class="k">int</span> row, <span class="k">int</span> col) {
+</span><span class="cl">        <span class="k">if</span> (gameState != gameState.Still_Going){
+</span><span class="cl">            <span class="k">return</span> <span class="k">false</span>;
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">if</span> (row &lt; <span class="n">0</span> || row &gt;= <span class="n">3</span> || col &lt; <span class="n">0</span> || col &gt;= <span class="n">3</span>){
+</span><span class="cl">            <span class="k">return</span> <span class="k">false</span>;
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">if</span> (board[row][col] != Player.NONE){
+</span><span class="cl">            <span class="k">return</span> <span class="k">false</span>;
+</span><span class="cl">        }
+</span><span class="cl">        board[row][col] = player;
+</span><span class="cl">        checkForWin();
+</span><span class="cl"> 
+</span><span class="cl">        <span class="k">if</span> (gameState == gameState.Still_Going) {
+</span><span class="cl">            changePlayer();
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">return</span> <span class="k">true</span>;
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    @Override
+</span><span class="cl">    <span class="k">public</span> Player getCurrentPlayer() {
+</span><span class="cl">        <span class="k">return</span> player;
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    @Override
+</span><span class="cl">    <span class="k">public</span> Player getWinner() {
+</span><span class="cl">        <span class="k">if</span>(gameState == GameState.X_WON) {
+</span><span class="cl">            <span class="k">return</span> Player.X;
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">if</span>(gameState == GameState.O_WON){
+</span><span class="cl">            <span class="k">return</span> Player.O;
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">return</span> Player.NONE;
+</span><span class="cl">    }
+</span><span class="cl">    @Override
+</span><span class="cl">    <span class="k">public</span> <span class="k">boolean</span> isGameOver() {
+</span><span class="cl">        <span class="k">return</span> gameState != GameState.Still_Going;
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    @Override
+</span><span class="cl">    <span class="k">public</span> <span class="k">boolean</span> isTie() {
+</span><span class="cl">        <span class="k">return</span> gameState == GameState.Tie_Game;
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    @Override
+</span><span class="cl">    <span class="k">public</span> Player getCell(<span class="k">int</span> row, <span class="k">int</span> col) {
+</span><span class="cl">        <span class="k">if</span> (row &lt; <span class="n">0</span> || row &gt;= <span class="n">3</span> || col &lt; <span class="n">0</span> || col &gt;= <span class="n">3</span>){
+</span><span class="cl">            <span class="k">return</span> Player.NONE;
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">return</span> board[row][col];
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    @Override
+</span><span class="cl">    <span class="k">public</span> <span class="k">void</span> reset() {
+</span><span class="cl">        <span class="k">for</span> (<span class="k">int</span> i = <span class="n">0</span>; i &lt; <span class="n">3</span>; i++){
+</span><span class="cl">            <span class="k">for</span> (<span class="k">int</span> j = <span class="n">0</span>; j &lt; <span class="n">3</span>; j++){
+</span><span class="cl">                board[i][j] = Player.NONE;
+</span><span class="cl">            }
+</span><span class="cl">        }
+</span><span class="cl">        player = Player.X;
+</span><span class="cl">        gameState = gameState.Still_Going;
+</span><span class="cl"> 
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">private</span> <span class="k">void</span> changePlayer(){
+</span><span class="cl">        <span class="k">if</span> (player == Player.X){
+</span><span class="cl">            player = Player.O;
+</span><span class="cl">            <span class="k">return</span>;
+</span><span class="cl">        }
+</span><span class="cl">        player = Player.X;
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">private</span> <span class="k">void</span> checkForWin(){
+</span><span class="cl">        <span class="k">for</span> (<span class="k">int</span> i = <span class="n">0</span>; i &lt; <span class="n">3</span>; i++){
+</span><span class="cl">            <span class="k">if</span> (board[i][<span class="n">0</span>] != Player.NONE
+</span><span class="cl">                    &amp;&amp; board[i][<span class="n">0</span>] == board[i][<span class="n">1</span>]
+</span><span class="cl">                    &amp;&amp; board[i][<span class="n">1</span>] == board[i][<span class="n">2</span>]){
+</span><span class="cl">                <span class="k">if</span> (player == Player.X){
+</span><span class="cl">                    gameState = gameState.X_WON;
+</span><span class="cl">                    <span class="k">return</span>;
+</span><span class="cl">                }
+</span><span class="cl">                gameState = gameState.O_WON;
+</span><span class="cl">            }
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">for</span> (<span class="k">int</span> i = <span class="n">0</span>; i &lt; <span class="n">3</span>; i++){
+</span><span class="cl">            <span class="k">if</span> (board[<span class="n">0</span>][i] != Player.NONE
+</span><span class="cl">                    &amp;&amp; board[<span class="n">0</span>][i] == board[<span class="n">1</span>][i]
+</span><span class="cl">                    &amp;&amp; board[<span class="n">1</span>][i] == board[<span class="n">2</span>][i]){
+</span><span class="cl">                <span class="k">if</span> (player == Player.X){
+</span><span class="cl">                    gameState = gameState.X_WON;
+</span><span class="cl">                    <span class="k">return</span>;
+</span><span class="cl">                }
+</span><span class="cl">                gameState = gameState.O_WON;
+</span><span class="cl">            }
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">if</span> (board[<span class="n">0</span>][<span class="n">0</span>] != Player.NONE
+</span><span class="cl">                &amp;&amp; board[<span class="n">0</span>][<span class="n">0</span>] == board[<span class="n">1</span>][<span class="n">1</span>]
+</span><span class="cl">                &amp;&amp; board[<span class="n">1</span>][<span class="n">1</span>] == board[<span class="n">2</span>][<span class="n">2</span>]){
+</span><span class="cl">            <span class="k">if</span> (player == Player.X){
+</span><span class="cl">                gameState = gameState.X_WON;
+</span><span class="cl">                <span class="k">return</span>;
+</span><span class="cl">            }
+</span><span class="cl">            gameState = gameState.O_WON;
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">if</span> (board[<span class="n">0</span>][<span class="n">2</span>] != Player.NONE
+</span><span class="cl">                &amp;&amp; board[<span class="n">0</span>][<span class="n">2</span>] == board[<span class="n">1</span>][<span class="n">1</span>]
+</span><span class="cl">                &amp;&amp; board[<span class="n">1</span>][<span class="n">1</span>] == board[<span class="n">2</span>][<span class="n">0</span>]){
+</span><span class="cl">            <span class="k">if</span> (player == Player.X){
+</span><span class="cl">                gameState = gameState.X_WON;
+</span><span class="cl">                <span class="k">return</span>;
+</span><span class="cl">            }
+</span><span class="cl">            gameState = gameState.O_WON;
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">if</span>(boardIsFull() == <span class="k">true</span>){
+</span><span class="cl">            gameState = gameState.Tie_Game;
+</span><span class="cl">        }
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">private</span> <span class="k">boolean</span> boardIsFull(){
+</span><span class="cl">        <span class="k">for</span> (<span class="k">int</span> i = <span class="n">0</span>; i &lt;<span class="n">3</span>; i++){
+</span><span class="cl">            <span class="k">for</span> (<span class="k">int</span> j = <span class="n">0</span>; j &lt; <span class="n">3</span>; j++){
+</span><span class="cl">                <span class="k">if</span> (board[i][j] == Player.NONE){
+</span><span class="cl">                    <span class="k">return</span> <span class="k">false</span>;
+</span><span class="cl">                }
+</span><span class="cl">            }
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">return</span> <span class="k">true</span>;
+</span><span class="cl">    }
+</span><span class="cl">}
+</span></pre>
+</div>
+<div class="src-pane" id="p3" hidden data-path="java-source/tictactoe/Player.java" data-meta="4 LINES">
+<pre class="code"><span class="cl"><span class="k">public</span> <span class="k">enum</span> Player {
+</span><span class="cl">    X, O, NONE
+</span><span class="cl">}
+</span></pre>
+</div>
+<div class="src-pane" id="p4" hidden data-path="java-source/tictactoe/ButtonGUI.java" data-meta="133 LINES">
+<pre class="code"><span class="cl"><span class="k">import</span> javax.swing.*;
+</span><span class="cl"><span class="k">import</span> java.awt.*;
+</span><span class="cl"> 
+</span><span class="cl"><span class="k">public</span> <span class="k">class</span> ButtonGUI <span class="k">extends</span> JFrame{
+</span><span class="cl">    <span class="k">private</span> <span class="k">final</span> IT3Model model;
+</span><span class="cl">    <span class="k">private</span> <span class="k">final</span> JButton[][] squares;
+</span><span class="cl">    <span class="k">private</span> <span class="k">final</span> JLabel statusBar;
+</span><span class="cl">    <span class="k">private</span> <span class="k">final</span> JButton newGame;
+</span><span class="cl">    <span class="k">private</span> JPanel grid;
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">public</span> ButtonGUI(IT3Model model, <span class="k">int</span> size) {
+</span><span class="cl">        <span class="k">this</span>.model = model;
+</span><span class="cl"> 
+</span><span class="cl">        setTitle(<span class="s">&quot;Tic-Tac-Toe&quot;</span>);
+</span><span class="cl">        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+</span><span class="cl">        squares = <span class="k">new</span> JButton[<span class="n">3</span>][<span class="n">3</span>];
+</span><span class="cl">        statusBar = <span class="k">new</span> JLabel(<span class="s">&quot;&quot;</span>);
+</span><span class="cl">        newGame = <span class="k">new</span> JButton(<span class="s">&quot;New Game&quot;</span>);
+</span><span class="cl">        buildBoard();
+</span><span class="cl">        grid.setPreferredSize(<span class="k">new</span> Dimension(size, size));
+</span><span class="cl">        buildBottom();
+</span><span class="cl">        updateStatus();
+</span><span class="cl">        refreshBoard();
+</span><span class="cl"> 
+</span><span class="cl">        pack();
+</span><span class="cl">        setLocationRelativeTo(<span class="k">null</span>);
+</span><span class="cl">        setVisible(<span class="k">true</span>);
+</span><span class="cl"> 
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">        <span class="k">private</span> <span class="k">void</span> buildBoard(){
+</span><span class="cl">            grid = <span class="k">new</span> JPanel(<span class="k">new</span> GridLayout(<span class="n">3</span>,<span class="n">3</span>));
+</span><span class="cl">            <span class="k">for</span> (<span class="k">int</span> i = <span class="n">0</span>; i &lt; <span class="n">3</span>; i++){
+</span><span class="cl">                <span class="k">for</span> (<span class="k">int</span> j = <span class="n">0</span>; j &lt; <span class="n">3</span>; j++){
+</span><span class="cl">                    JButton square = <span class="k">new</span> JButton(<span class="s">&quot; &quot;</span>);
+</span><span class="cl">                    squares[i][j] = square;
+</span><span class="cl">                    <span class="k">int</span> row = i;
+</span><span class="cl">                    <span class="k">int</span> column = j;
+</span><span class="cl">                    square.addActionListener(e -&gt;{
+</span><span class="cl">                        <span class="k">if</span>(!model.move(row, column)) {
+</span><span class="cl">                            <span class="k">return</span>;
+</span><span class="cl">                        }
+</span><span class="cl">                        refreshBoard();
+</span><span class="cl">                        updateStatus();
+</span><span class="cl"> 
+</span><span class="cl">                        <span class="k">if</span>(model.isGameOver()) {
+</span><span class="cl">                            disableSquares();
+</span><span class="cl">                            showGameOverDialog();
+</span><span class="cl">                        }
+</span><span class="cl">                    });
+</span><span class="cl">                    grid.add(square);
+</span><span class="cl">                }
+</span><span class="cl">            }
+</span><span class="cl">            add(grid, BorderLayout.CENTER);
+</span><span class="cl">        }
+</span><span class="cl"> 
+</span><span class="cl">        <span class="k">private</span> <span class="k">void</span> buildBottom(){
+</span><span class="cl">            JPanel panel = <span class="k">new</span> JPanel();
+</span><span class="cl">            panel.add(statusBar);
+</span><span class="cl">            panel.add(newGame);
+</span><span class="cl"> 
+</span><span class="cl">            newGame.addActionListener(e -&gt; newGame());
+</span><span class="cl">            add(panel, BorderLayout.SOUTH);
+</span><span class="cl"> 
+</span><span class="cl">        }
+</span><span class="cl"> 
+</span><span class="cl">        <span class="k">private</span> <span class="k">void</span> refreshBoard() {
+</span><span class="cl">            <span class="k">for</span> (<span class="k">int</span> i = <span class="n">0</span>; i &lt; <span class="n">3</span>; i++){
+</span><span class="cl">                <span class="k">for</span> (<span class="k">int</span> j = <span class="n">0</span>; j &lt; <span class="n">3</span>; j++){
+</span><span class="cl">                    Player p = model.getCell(i,j);
+</span><span class="cl">                    <span class="k">if</span> (p == Player.NONE){
+</span><span class="cl">                        squares[i][j].setText(<span class="s">&quot;&quot;</span>);
+</span><span class="cl">                        squares[i][j].setEnabled(!model.isGameOver());
+</span><span class="cl">                    } <span class="k">else</span>{
+</span><span class="cl">                        squares[i][j].setText(p.name());
+</span><span class="cl">                        squares[i][j].setEnabled(<span class="k">false</span>);
+</span><span class="cl">                    }
+</span><span class="cl">                }
+</span><span class="cl">            }
+</span><span class="cl">        }
+</span><span class="cl"> 
+</span><span class="cl">        <span class="k">private</span> <span class="k">void</span> newGame() {
+</span><span class="cl">            model.reset();
+</span><span class="cl">            <span class="k">for</span>(<span class="k">int</span> i = <span class="n">0</span>; i &lt; <span class="n">3</span>; i++){
+</span><span class="cl">                <span class="k">for</span> (<span class="k">int</span> j = <span class="n">0</span>; j &lt; <span class="n">3</span>; j++){
+</span><span class="cl">                    squares[i][j].setText(<span class="s">&quot;&quot;</span>);
+</span><span class="cl">                    squares[i][j].setEnabled(<span class="k">true</span>);
+</span><span class="cl">                }
+</span><span class="cl">            }
+</span><span class="cl">            refreshBoard();
+</span><span class="cl">            updateStatus();
+</span><span class="cl"> 
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">private</span> <span class="k">void</span> updateStatus(){
+</span><span class="cl">            <span class="k">if</span> (model.getWinner() != Player.NONE){
+</span><span class="cl">                statusBar.setText(model.getWinner() + <span class="s">&quot; Won!&quot;</span>);
+</span><span class="cl">            } <span class="k">else</span> <span class="k">if</span> (model.isTie()) {
+</span><span class="cl">                statusBar.setText(<span class="s">&quot;Tie Game!&quot;</span>);
+</span><span class="cl">            } <span class="k">else</span> {
+</span><span class="cl">                statusBar.setText(model.getCurrentPlayer() + <span class="s">&quot;&#x27;s turn&quot;</span>);
+</span><span class="cl">            }
+</span><span class="cl">        }
+</span><span class="cl"> 
+</span><span class="cl">        <span class="k">private</span> <span class="k">void</span> disableSquares(){
+</span><span class="cl">            <span class="k">for</span>(<span class="k">int</span> i = <span class="n">0</span>; i &lt; <span class="n">3</span>; i++) {
+</span><span class="cl">                <span class="k">for</span> (<span class="k">int</span> j = <span class="n">0</span>; j &lt; <span class="n">3</span>; j++) {
+</span><span class="cl">                    squares[i][j].setEnabled(<span class="k">false</span>);
+</span><span class="cl">                }
+</span><span class="cl">            }
+</span><span class="cl">        }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">private</span> <span class="k">void</span> showGameOverDialog() {
+</span><span class="cl">    String message;
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">if</span> (model.getWinner() != Player.NONE){
+</span><span class="cl">        message = model.getWinner() + <span class="s">&quot; won!!!!&quot;</span>;
+</span><span class="cl">    } <span class="k">else</span> {
+</span><span class="cl">        message = <span class="s">&quot;It&#x27;s a tie!&quot;</span>;
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">int</span> choice = JOptionPane.showConfirmDialog(
+</span><span class="cl">            <span class="k">this</span>,
+</span><span class="cl">            message + <span class="s">&quot;\nPlay again?&quot;</span>,
+</span><span class="cl">            <span class="s">&quot;Game Over&quot;</span>,
+</span><span class="cl">            JOptionPane.YES_NO_OPTION
+</span><span class="cl">    );
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">if</span> (choice == JOptionPane.YES_OPTION){
+</span><span class="cl">        model.reset();
+</span><span class="cl">    }
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">}
+</span></pre>
+</div>
+<div class="src-pane" id="p5" hidden data-path="java-source/tictactoe/PaintGUI.java" data-meta="98 LINES">
+<pre class="code"><span class="cl"><span class="k">import</span> javax.swing.*;
+</span><span class="cl"><span class="k">import</span> java.awt.*;
+</span><span class="cl"><span class="k">import</span> java.awt.event.MouseAdapter;
+</span><span class="cl"><span class="k">import</span> java.awt.event.MouseEvent;
+</span><span class="cl"><span class="k">public</span> <span class="k">class</span> PaintGUI <span class="k">extends</span> JFrame {
+</span><span class="cl">    <span class="k">private</span> <span class="k">final</span> IT3Model model;
+</span><span class="cl">    <span class="k">public</span> PaintGUI(IT3Model model, <span class="k">int</span> size){
+</span><span class="cl">        <span class="k">this</span>.model = model;
+</span><span class="cl">        setTitle(<span class="s">&quot;Tic-Tac-Toe&quot;</span>);
+</span><span class="cl">        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+</span><span class="cl"> 
+</span><span class="cl">        BoardPanel panel = <span class="k">new</span> BoardPanel();
+</span><span class="cl">        panel.setPreferredSize(<span class="k">new</span> Dimension(size,size));
+</span><span class="cl">        add(panel);
+</span><span class="cl">        pack();
+</span><span class="cl">        setLocationRelativeTo(<span class="k">null</span>);
+</span><span class="cl">        setVisible(<span class="k">true</span>);
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">private</span> <span class="k">class</span> BoardPanel <span class="k">extends</span> JPanel {
+</span><span class="cl">        <span class="k">public</span> BoardPanel(){
+</span><span class="cl">            addMouseListener(<span class="k">new</span> MouseAdapter() {
+</span><span class="cl">                @Override
+</span><span class="cl">                <span class="k">public</span> <span class="k">void</span> mousePressed(MouseEvent e) {
+</span><span class="cl">                    <span class="k">int</span> width = getWidth() / <span class="n">3</span>;
+</span><span class="cl">                    <span class="k">int</span> height = getHeight() / <span class="n">3</span>;
+</span><span class="cl">                    <span class="k">int</span> row = e.getY() / height;
+</span><span class="cl">                    <span class="k">int</span> col = e.getX() / width;
+</span><span class="cl"> 
+</span><span class="cl">                    <span class="k">if</span>(model.move(row, col)){
+</span><span class="cl">                        repaint();
+</span><span class="cl">                    }
+</span><span class="cl">                    <span class="k">if</span>(model.isGameOver()){
+</span><span class="cl">                        showGameOver();
+</span><span class="cl">                    }
+</span><span class="cl">                }
+</span><span class="cl">            });
+</span><span class="cl">        }
+</span><span class="cl"> 
+</span><span class="cl">        @Override
+</span><span class="cl">        <span class="k">protected</span> <span class="k">void</span> paintComponent(Graphics g){
+</span><span class="cl">            <span class="k">super</span>.paintComponent(g);
+</span><span class="cl"> 
+</span><span class="cl">            <span class="k">int</span> fullWidth = getWidth();
+</span><span class="cl">            <span class="k">int</span> fullHeight = getHeight();
+</span><span class="cl">            <span class="k">int</span> cellWidth = fullWidth / <span class="n">3</span>;
+</span><span class="cl">            <span class="k">int</span> cellheight = fullHeight / <span class="n">3</span>;
+</span><span class="cl"> 
+</span><span class="cl">            g.drawLine(cellWidth, <span class="n">0</span>, cellWidth, fullHeight);
+</span><span class="cl">            g.drawLine(<span class="n">2</span> * cellWidth, <span class="n">0</span>, <span class="n">2</span> * cellWidth, fullHeight);
+</span><span class="cl">            g.drawLine(<span class="n">0</span>, cellheight, fullWidth, cellheight);
+</span><span class="cl">            g.drawLine(<span class="n">0</span>, <span class="n">2</span> * cellheight, fullWidth, <span class="n">2</span> * cellheight);
+</span><span class="cl"> 
+</span><span class="cl">            <span class="k">int</span> padding = <span class="n">20</span>;
+</span><span class="cl"> 
+</span><span class="cl">            <span class="k">for</span> (<span class="k">int</span> i = <span class="n">0</span>; i &lt; <span class="n">3</span>; i++){
+</span><span class="cl">                <span class="k">for</span> (<span class="k">int</span> j = <span class="n">0</span>; j &lt; <span class="n">3</span>; j++){
+</span><span class="cl">                    Player p = model.getCell(i,j);
+</span><span class="cl"> 
+</span><span class="cl">                    <span class="k">int</span> x = j * cellWidth;
+</span><span class="cl">                    <span class="k">int</span> y = i * cellheight;
+</span><span class="cl"> 
+</span><span class="cl">                    <span class="k">if</span>(p == Player.X){
+</span><span class="cl">                        g.drawLine(x + padding, y + padding,
+</span><span class="cl">                                x + cellWidth - padding, y + cellheight - padding);
+</span><span class="cl">                        g.drawLine(x + padding, y + cellheight - padding,
+</span><span class="cl">                                x + cellWidth - padding, y + padding);
+</span><span class="cl">                    }
+</span><span class="cl">                    <span class="k">if</span>(p == Player.O){
+</span><span class="cl">                        g.drawOval(x + padding, y+ padding,
+</span><span class="cl">                                cellWidth - <span class="n">2</span> * padding, cellheight - <span class="n">2</span> * padding);
+</span><span class="cl">                    }
+</span><span class="cl">                }
+</span><span class="cl">            }
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">private</span> <span class="k">void</span> showGameOver() {
+</span><span class="cl">            String message;
+</span><span class="cl"> 
+</span><span class="cl">            <span class="k">if</span> (model.getWinner() != Player.NONE){
+</span><span class="cl">                message = model.getWinner() + <span class="s">&quot; won!!!!&quot;</span>;
+</span><span class="cl">            } <span class="k">else</span> {
+</span><span class="cl">                message = <span class="s">&quot;It&#x27;s a tie!&quot;</span>;
+</span><span class="cl">            }
+</span><span class="cl">            <span class="k">int</span> choice = JOptionPane.showConfirmDialog(
+</span><span class="cl">                    <span class="k">this</span>,
+</span><span class="cl">                    message + <span class="s">&quot;\nPlay again?&quot;</span>,
+</span><span class="cl">                    <span class="s">&quot;Game Over&quot;</span>,
+</span><span class="cl">                    JOptionPane.YES_NO_OPTION
+</span><span class="cl">            );
+</span><span class="cl"> 
+</span><span class="cl">            <span class="k">if</span> (choice == JOptionPane.YES_OPTION){
+</span><span class="cl">                model.reset();
+</span><span class="cl">                repaint();
+</span><span class="cl">            }
+</span><span class="cl">        }
+</span><span class="cl">    }
+</span><span class="cl">}
+</span></pre>
+</div>
+<div class="src-pane" id="p6" hidden data-path="java-source/tictactoe/ConsoleUI.java" data-meta="84 LINES">
+<pre class="code"><span class="cl"><span class="k">import</span> java.util.Locale;
+</span><span class="cl"><span class="k">import</span> java.util.Scanner;
+</span><span class="cl"> 
+</span><span class="cl"><span class="k">public</span> <span class="k">class</span> ConsoleUI {
+</span><span class="cl">    <span class="k">private</span> <span class="k">final</span> IT3Model model;
+</span><span class="cl">    <span class="k">private</span> <span class="k">final</span> Scanner <span class="k">in</span> = <span class="k">new</span> Scanner(System.<span class="k">in</span>);
+</span><span class="cl">    <span class="k">public</span> ConsoleUI(IT3Model model) {
+</span><span class="cl">        <span class="k">this</span>.model = model;
+</span><span class="cl">        gameLoop();
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">private</span> <span class="k">void</span> gameLoop(){
+</span><span class="cl">        <span class="k">while</span> (<span class="k">true</span>){
+</span><span class="cl">            model.reset();
+</span><span class="cl">            <span class="k">while</span> (!model.isGameOver()) {
+</span><span class="cl">                printBoard();
+</span><span class="cl">                System.out.println();
+</span><span class="cl">                System.out.println(<span class="s">&quot;Turn for: &quot;</span> + model.getCurrentPlayer());
+</span><span class="cl">                System.out.println(<span class="s">&quot;Enter move: &quot;</span>);
+</span><span class="cl">                String s = <span class="k">in</span>.nextLine().trim().toUpperCase(Locale.ROOT);
+</span><span class="cl">                <span class="k">if</span> (!tryMoveFromString(s)) {
+</span><span class="cl">                    System.out.println(<span class="s">&quot;Illegal Move. Give it another go bub&quot;</span>);
+</span><span class="cl">                }
+</span><span class="cl">            }
+</span><span class="cl">            printBoard();
+</span><span class="cl">            <span class="k">if</span> (model.getWinner() != Player.NONE){
+</span><span class="cl">                System.out.println(<span class="s">&quot;\nWinner: &quot;</span> + model.getWinner());
+</span><span class="cl">            } <span class="k">else</span> {
+</span><span class="cl">                System.out.println(<span class="s">&quot;Tie game!!&quot;</span>);
+</span><span class="cl">            }
+</span><span class="cl">            System.out.print(<span class="s">&quot;Play again? (y/n): &quot;</span>);
+</span><span class="cl">            String playAgain = <span class="k">in</span>.nextLine().trim().toLowerCase(Locale.ROOT);
+</span><span class="cl">            <span class="k">if</span> (!playAgain.equals(<span class="s">&quot;y&quot;</span>)){
+</span><span class="cl">                <span class="k">break</span>;
+</span><span class="cl">            }
+</span><span class="cl">        }
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">private</span> <span class="k">boolean</span> tryMoveFromString(String s){
+</span><span class="cl">        <span class="k">if</span> (s.length() != <span class="n">2</span>){
+</span><span class="cl">            <span class="k">return</span> <span class="k">false</span>;
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">char</span> columnChar = s.charAt(<span class="n">0</span>);
+</span><span class="cl">        <span class="k">char</span> rowChar = s.charAt(<span class="n">1</span>);
+</span><span class="cl"> 
+</span><span class="cl">        <span class="k">int</span> column = <span class="k">switch</span> (columnChar){
+</span><span class="cl">            <span class="k">case</span> <span class="s">&#x27;A&#x27;</span> -&gt; <span class="n">0</span>;
+</span><span class="cl">            <span class="k">case</span> <span class="s">&#x27;B&#x27;</span> -&gt; <span class="n">1</span>;
+</span><span class="cl">            <span class="k">case</span> <span class="s">&#x27;C&#x27;</span> -&gt; <span class="n">2</span>;
+</span><span class="cl">            <span class="k">default</span> -&gt; -<span class="n">1</span>;
+</span><span class="cl">        };
+</span><span class="cl">        <span class="k">int</span> row = <span class="k">switch</span> (rowChar){
+</span><span class="cl">            <span class="k">case</span> <span class="s">&#x27;1&#x27;</span> -&gt; <span class="n">0</span>;
+</span><span class="cl">            <span class="k">case</span> <span class="s">&#x27;2&#x27;</span> -&gt; <span class="n">1</span>;
+</span><span class="cl">            <span class="k">case</span> <span class="s">&#x27;3&#x27;</span> -&gt; <span class="n">2</span>;
+</span><span class="cl">            <span class="k">default</span> -&gt; -<span class="n">1</span>;
+</span><span class="cl">        };
+</span><span class="cl">        <span class="k">if</span> (row == -<span class="n">1</span> || column == -<span class="n">1</span>){
+</span><span class="cl">            <span class="k">return</span> <span class="k">false</span>;
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">return</span> model.move(row, column);
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">private</span> <span class="k">void</span> printBoard(){
+</span><span class="cl">        System.out.println(<span class="s">&quot;    A   B   C&quot;</span>);
+</span><span class="cl">        System.out.println(<span class="s">&quot;  ┌───┬───┬───┐&quot;</span>);
+</span><span class="cl">        <span class="k">for</span> (<span class="k">int</span> i = <span class="n">0</span>; i &lt; <span class="n">3</span>; i++){
+</span><span class="cl">            System.out.print((i + <span class="n">1</span>) + <span class="s">&quot; |&quot;</span>);
+</span><span class="cl">            <span class="k">for</span> (<span class="k">int</span> j = <span class="n">0</span>; j &lt; <span class="n">3</span>; j++){
+</span><span class="cl">                Player p = model.getCell(i,j);
+</span><span class="cl">                String cell = <span class="s">&quot; &quot;</span>;
+</span><span class="cl">                <span class="k">if</span> (p != Player.NONE){
+</span><span class="cl">                    cell = p.name();
+</span><span class="cl">                }
+</span><span class="cl">                System.out.print(<span class="s">&quot; &quot;</span> + cell + <span class="s">&quot; |&quot;</span>);
+</span><span class="cl">            }
+</span><span class="cl">            System.out.println();
+</span><span class="cl">            <span class="k">if</span>(i &lt; <span class="n">2</span>){
+</span><span class="cl">                System.out.println(<span class="s">&quot;  ├───┼───┼───┤&quot;</span>);
+</span><span class="cl">            }
+</span><span class="cl">        }
+</span><span class="cl">        System.out.println(<span class="s">&quot;  └───┴───┴───┘&quot;</span>);
+</span><span class="cl">    }
+</span><span class="cl">}
+</span></pre>
+</div>
+<div class="src-pane" id="p7" hidden data-path="java-source/othello/OthelloModel.java" data-meta="222 LINES">
+<pre class="code"><span class="cl"><span class="k">import</span> java.util.ArrayList;
+</span><span class="cl"><span class="k">import</span> java.util.List;
+</span><span class="cl"><span class="k">public</span> <span class="k">class</span> OthelloModel {
+</span><span class="cl">    <span class="k">private</span> <span class="k">final</span> <span class="k">int</span> size = <span class="n">8</span>;
+</span><span class="cl">    <span class="k">private</span> <span class="k">final</span> Square[][] board;
+</span><span class="cl">    <span class="k">private</span> Player currentPlayer;
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">public</span> OthelloModel(){
+</span><span class="cl">        board = <span class="k">new</span> Square[size][size];
+</span><span class="cl">        resetGame();
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">public</span> <span class="k">void</span> resetGame(){
+</span><span class="cl">        <span class="k">for</span> (<span class="k">int</span> i = <span class="n">0</span>; i &lt; size; i++){
+</span><span class="cl">            <span class="k">for</span> (<span class="k">int</span> j = <span class="n">0</span>; j &lt; size; j++){
+</span><span class="cl">                board[i][j] = Square.EMPTY;
+</span><span class="cl">            }
+</span><span class="cl">        }
+</span><span class="cl">        board[<span class="n">3</span>][<span class="n">3</span>] = Square.WHITE;
+</span><span class="cl">        board[<span class="n">3</span>][<span class="n">4</span>] = Square.BLACK;
+</span><span class="cl">        board[<span class="n">4</span>][<span class="n">3</span>] = Square.BLACK;
+</span><span class="cl">        board[<span class="n">4</span>][<span class="n">4</span>] = Square.WHITE;
+</span><span class="cl">        currentPlayer = Player.BLACK;
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">public</span> <span class="k">int</span> getSize(){
+</span><span class="cl">        <span class="k">return</span> size;
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">public</span> Square getSquare(<span class="k">int</span> row, <span class="k">int</span> column){
+</span><span class="cl">        <span class="k">return</span> board[row][column];
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">public</span> Player getCurrentPlayer() {
+</span><span class="cl">        <span class="k">return</span> currentPlayer;
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">public</span> <span class="k">void</span> switchTurn(){
+</span><span class="cl">        currentPlayer = opponent(currentPlayer);
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">public</span> Player opponent(Player player){
+</span><span class="cl">        <span class="k">if</span>(player == Player.BLACK){
+</span><span class="cl">            <span class="k">return</span> Player.WHITE;
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">return</span> Player.BLACK;
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">public</span> Square playersSquare(Player player){
+</span><span class="cl">        <span class="k">if</span> (player == Player.BLACK){
+</span><span class="cl">            <span class="k">return</span> Square.BLACK;
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">return</span> Square.WHITE;
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">public</span>  Square opponentSquareColor(Player player){
+</span><span class="cl">        <span class="k">if</span>( player == Player.BLACK){
+</span><span class="cl">            <span class="k">return</span> Square.WHITE;
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">return</span> Square.BLACK;
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">public</span>  <span class="k">boolean</span> isValidMove(<span class="k">int</span> row, <span class="k">int</span> column, Player player){
+</span><span class="cl">        <span class="k">if</span> (isInside(row, column) == <span class="k">false</span>){
+</span><span class="cl">            <span class="k">return</span> <span class="k">false</span>;
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">if</span> (board[row][column] != Square.EMPTY){
+</span><span class="cl">            <span class="k">return</span> <span class="k">false</span>;
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">int</span>[][] directions = getDirections();
+</span><span class="cl"> 
+</span><span class="cl">        <span class="k">for</span> (<span class="k">int</span>[] direction : directions){
+</span><span class="cl">            <span class="k">if</span> (capturesInAnyDirection(row, column, direction[<span class="n">0</span>], direction[<span class="n">1</span>], player) == <span class="k">true</span>){
+</span><span class="cl">                <span class="k">return</span> <span class="k">true</span>;
+</span><span class="cl">            }
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">return</span> <span class="k">false</span>;
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">private</span> <span class="k">boolean</span> isInside(<span class="k">int</span> row, <span class="k">int</span> column){
+</span><span class="cl">        <span class="k">if</span> ((row &gt;= <span class="n">0</span> &amp;&amp; row &lt; size &amp;&amp; column &gt;= <span class="n">0</span> &amp;&amp; column &lt; size) == <span class="k">true</span>){
+</span><span class="cl">            <span class="k">return</span> <span class="k">true</span>;
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">return</span> <span class="k">false</span>;
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">private</span> <span class="k">int</span>[][] getDirections(){
+</span><span class="cl">        <span class="k">int</span>[][] directions = <span class="k">new</span> <span class="k">int</span>[][]{ {-<span class="n">1</span>,-<span class="n">1</span>}, {-<span class="n">1</span>, <span class="n">0</span>}, {-<span class="n">1</span>, <span class="n">1</span>}, {<span class="n">0</span>,-<span class="n">1</span>}, {<span class="n">0</span>,<span class="n">1</span>}, {<span class="n">1</span>,-<span class="n">1</span>}, {<span class="n">1</span>, <span class="n">0</span>}, {<span class="n">1</span>,<span class="n">1</span>}};
+</span><span class="cl">        <span class="k">return</span> directions;
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">private</span> <span class="k">boolean</span> capturesInAnyDirection(<span class="k">int</span> row, <span class="k">int</span> column, <span class="k">int</span> directionRow, <span class="k">int</span> directionColumn, Player player){
+</span><span class="cl">        <span class="k">int</span> r = row + directionRow;
+</span><span class="cl">        <span class="k">int</span> c = column + directionColumn;
+</span><span class="cl">        Square opponent = opponentSquareColor(player);
+</span><span class="cl">        Square own = playersSquare(player);
+</span><span class="cl">        <span class="k">boolean</span> foundOpponent = <span class="k">false</span>;
+</span><span class="cl"> 
+</span><span class="cl">        <span class="k">while</span>(isInside(r,c) == <span class="k">true</span>){
+</span><span class="cl">            <span class="k">if</span>(board[r][c] == opponent){
+</span><span class="cl">                foundOpponent = <span class="k">true</span>;
+</span><span class="cl">            } <span class="k">else</span> <span class="k">if</span> (board[r][c] == own) {
+</span><span class="cl">                <span class="k">return</span> foundOpponent;
+</span><span class="cl">            } <span class="k">else</span>{
+</span><span class="cl">                <span class="k">return</span> <span class="k">false</span>;
+</span><span class="cl">            }
+</span><span class="cl">            r += directionRow;
+</span><span class="cl">            c += directionColumn;
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">return</span> <span class="k">false</span>;
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">private</span> <span class="k">void</span> flipInDirection(<span class="k">int</span> row, <span class="k">int</span> column, <span class="k">int</span> directionRow, <span class="k">int</span> directionColumn, Player player){
+</span><span class="cl">        <span class="k">int</span> r = row + directionRow;
+</span><span class="cl">        <span class="k">int</span> c = column + directionColumn;
+</span><span class="cl">        Square opponent = opponentSquareColor(player);
+</span><span class="cl">        Square own = playersSquare(player);
+</span><span class="cl"> 
+</span><span class="cl">        <span class="k">while</span>(isInside(r,c) == <span class="k">true</span> &amp;&amp; board[r][c] == opponent) {
+</span><span class="cl">            board[r][c] = own;
+</span><span class="cl">            r += directionRow;
+</span><span class="cl">            c += directionColumn;
+</span><span class="cl">        }
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">public</span> List&lt;Move&gt; getValidMoves(Player player){
+</span><span class="cl">        List&lt;Move&gt; moves = <span class="k">new</span> ArrayList&lt;&gt;();
+</span><span class="cl">        <span class="k">for</span> (<span class="k">int</span> i = <span class="n">0</span>; i &lt; size; i++){
+</span><span class="cl">            <span class="k">for</span> (<span class="k">int</span> j = <span class="n">0</span>; j &lt; size; j++){
+</span><span class="cl">                <span class="k">if</span> (isValidMove(i,j, player)){
+</span><span class="cl">                    moves.add(<span class="k">new</span> Move(i,j));
+</span><span class="cl">                }
+</span><span class="cl">            }
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">return</span> moves;
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">public</span> <span class="k">boolean</span> makeMove(<span class="k">int</span> row, <span class="k">int</span> column, Player player){
+</span><span class="cl">        <span class="k">if</span> (isValidMove(row, column, player) == <span class="k">false</span>){
+</span><span class="cl">            <span class="k">return</span> <span class="k">false</span>;
+</span><span class="cl">        }
+</span><span class="cl">        board[row][column] = playersSquare(player);
+</span><span class="cl">        <span class="k">int</span>[][] directions = getDirections();
+</span><span class="cl">        <span class="k">for</span> (<span class="k">int</span>[] direction : directions){
+</span><span class="cl">            <span class="k">if</span> (capturesInAnyDirection(row, column, direction[<span class="n">0</span>], direction[<span class="n">1</span>], player) == <span class="k">true</span>){
+</span><span class="cl">                flipInDirection(row, column, direction[<span class="n">0</span>], direction[<span class="n">1</span>], player);
+</span><span class="cl">            }
+</span><span class="cl">        }
+</span><span class="cl">        currentPlayer = opponent(player);
+</span><span class="cl">        handleSkips();
+</span><span class="cl">        <span class="k">return</span> <span class="k">true</span>;
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">private</span> <span class="k">void</span> handleSkips(){
+</span><span class="cl">        <span class="k">if</span> (getValidMoves(currentPlayer).isEmpty() &amp;&amp; isGameOver() == <span class="k">false</span>){
+</span><span class="cl">            currentPlayer = opponent(currentPlayer);
+</span><span class="cl">        }
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">public</span> <span class="k">int</span> countPieces(Player player){
+</span><span class="cl">        Square correctColor = playersSquare(player);
+</span><span class="cl">        <span class="k">int</span> count = <span class="n">0</span>;
+</span><span class="cl">        <span class="k">for</span> (<span class="k">int</span> i = <span class="n">0</span>; i &lt; size; i++){
+</span><span class="cl">            <span class="k">for</span> (<span class="k">int</span> j = <span class="n">0</span>; j &lt; size; j++){
+</span><span class="cl">                <span class="k">if</span> (board[i][j] == correctColor){
+</span><span class="cl">                    count++;
+</span><span class="cl">                }
+</span><span class="cl">            }
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">return</span> count;
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">public</span> <span class="k">boolean</span> isGameOver(){
+</span><span class="cl">        <span class="k">if</span> (getValidMoves(Player.BLACK).isEmpty() &amp;&amp; getValidMoves(Player.WHITE).isEmpty()){
+</span><span class="cl">            <span class="k">return</span> <span class="k">true</span>;
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">return</span> <span class="k">false</span>;
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">public</span> Player getWinner(){
+</span><span class="cl">        <span class="k">int</span> black = countPieces(Player.BLACK);
+</span><span class="cl">        <span class="k">int</span> white = countPieces(Player.WHITE);
+</span><span class="cl"> 
+</span><span class="cl">        <span class="k">if</span> (black &gt; white){
+</span><span class="cl">            <span class="k">return</span> Player.BLACK;
+</span><span class="cl">        } <span class="k">else</span> <span class="k">if</span> (white &gt; black) {
+</span><span class="cl">            <span class="k">return</span> Player.WHITE;
+</span><span class="cl">        } <span class="k">else</span> {
+</span><span class="cl">            <span class="k">return</span> <span class="k">null</span>;
+</span><span class="cl">        }
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">public</span> <span class="k">int</span> checkWhoIsWinning(Player player){
+</span><span class="cl">        Player opponent = opponent(player);
+</span><span class="cl">        <span class="k">int</span> score = countPieces(player) - countPieces(opponent);
+</span><span class="cl">        <span class="k">return</span> score;
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">public</span> OthelloModel copyBoard(){
+</span><span class="cl">        OthelloModel copy = <span class="k">new</span> OthelloModel();
+</span><span class="cl">        <span class="k">for</span> (<span class="k">int</span> i = <span class="n">0</span>; i &lt; size; i++) {
+</span><span class="cl">            <span class="k">for</span> (<span class="k">int</span> j = <span class="n">0</span>; j &lt; size; j++) {
+</span><span class="cl">                copy.board[i][j] = <span class="k">this</span>.board[i][j];
+</span><span class="cl">            }
+</span><span class="cl">        }
+</span><span class="cl">        copy.currentPlayer = <span class="k">this</span>.currentPlayer;
+</span><span class="cl">        <span class="k">return</span> copy;
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">public</span> <span class="k">enum</span> Square{
+</span><span class="cl">        EMPTY, WHITE, BLACK
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">public</span> <span class="k">enum</span> Player{
+</span><span class="cl">        WHITE, BLACK
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">public</span> <span class="k">static</span> <span class="k">class</span> Move {
+</span><span class="cl">        <span class="k">public</span> <span class="k">final</span> <span class="k">int</span> row;
+</span><span class="cl">        <span class="k">public</span> <span class="k">final</span> <span class="k">int</span> column;
+</span><span class="cl"> 
+</span><span class="cl">        <span class="k">public</span> Move(<span class="k">int</span> row, <span class="k">int</span> column) {
+</span><span class="cl">            <span class="k">this</span>.row = row;
+</span><span class="cl">            <span class="k">this</span>.column = column;
+</span><span class="cl">        }
+</span><span class="cl"> 
+</span><span class="cl">        @Override
+</span><span class="cl">        <span class="k">public</span> String toString(){
+</span><span class="cl">            <span class="k">return</span> <span class="s">&quot;(&quot;</span> + row + <span class="s">&quot;, &quot;</span> + column + <span class="s">&quot;)&quot;</span>;
+</span><span class="cl">        }
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">}
+</span></pre>
+</div>
+<div class="src-pane" id="p8" hidden data-path="java-source/othello/OthelloComputerAndAI.java" data-meta="96 LINES">
+<pre class="code"><span class="cl"><span class="k">import</span> java.util.List;
+</span><span class="cl"> 
+</span><span class="cl"><span class="k">public</span> <span class="k">class</span> OthelloComputerAndAI {
+</span><span class="cl">    <span class="k">public</span> <span class="k">enum</span> CompType {
+</span><span class="cl">        GREEDY_CPU, MINIMAX_AI
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">public</span> OthelloModel.Move getComputerMove(OthelloModel model, CompType compType, OthelloModel.Player computerPlayer, <span class="k">int</span> minimaxDepth){
+</span><span class="cl">        <span class="k">if</span>(compType == CompType.GREEDY_CPU){
+</span><span class="cl">            <span class="k">return</span> getGreedyCpuMove(model, computerPlayer);
+</span><span class="cl">        } <span class="k">else</span> {
+</span><span class="cl">            <span class="k">return</span> getMinimaxAiMove(model,computerPlayer,minimaxDepth);
+</span><span class="cl">        }
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">public</span> OthelloModel.Move getGreedyCpuMove(OthelloModel model, OthelloModel.Player player){
+</span><span class="cl">        List&lt;OthelloModel.Move&gt; moves = model.getValidMoves(player);
+</span><span class="cl">        <span class="k">if</span>(moves.isEmpty() == <span class="k">true</span>){
+</span><span class="cl">            <span class="k">return</span> <span class="k">null</span>;
+</span><span class="cl">        }
+</span><span class="cl">        OthelloModel.Move bestMove = <span class="k">null</span>;
+</span><span class="cl">        <span class="k">int</span> bestScore = Integer.MIN_VALUE;
+</span><span class="cl"> 
+</span><span class="cl">        <span class="k">for</span> (OthelloModel.Move move: moves){
+</span><span class="cl">            OthelloModel copy = model.copyBoard();
+</span><span class="cl">            <span class="k">int</span> scoreBeforeMove = copy.countPieces(player);
+</span><span class="cl">            copy.makeMove(move.row, move.column, player);
+</span><span class="cl">            <span class="k">int</span> scoreAfterMove = copy.countPieces(player);
+</span><span class="cl">            <span class="k">int</span> gainThisMove = scoreAfterMove - scoreBeforeMove;
+</span><span class="cl"> 
+</span><span class="cl">            <span class="k">if</span> (gainThisMove &gt; bestScore){
+</span><span class="cl">                bestScore = gainThisMove;
+</span><span class="cl">                bestMove = move;
+</span><span class="cl">            }
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">return</span> bestMove;
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">public</span> OthelloModel.Move getMinimaxAiMove(OthelloModel model, OthelloModel.Player player, <span class="k">int</span> minimaxDepth){
+</span><span class="cl">        List&lt;OthelloModel.Move&gt; moves = model.getValidMoves(player);
+</span><span class="cl">        <span class="k">if</span>(moves.isEmpty() == <span class="k">true</span>){
+</span><span class="cl">            <span class="k">return</span> <span class="k">null</span>;
+</span><span class="cl">        }
+</span><span class="cl">        OthelloModel.Move bestMove = <span class="k">null</span>;
+</span><span class="cl">        <span class="k">int</span> bestScore = Integer.MIN_VALUE;
+</span><span class="cl"> 
+</span><span class="cl">        <span class="k">for</span> (OthelloModel.Move move: moves) {
+</span><span class="cl">            OthelloModel copy = model.copyBoard();
+</span><span class="cl">            copy.makeMove(move.row, move.column, player);
+</span><span class="cl">            <span class="k">int</span> score = minimax(copy,minimaxDepth - <span class="n">1</span>, <span class="k">false</span>, player);
+</span><span class="cl">            <span class="k">if</span> (score &gt; bestScore){
+</span><span class="cl">                bestScore = score;
+</span><span class="cl">                bestMove = move;
+</span><span class="cl">            }
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">return</span> bestMove;
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">private</span> <span class="k">int</span> minimax(OthelloModel model, <span class="k">int</span> minimaxDepth, <span class="k">boolean</span> maxmize, OthelloModel.Player player){
+</span><span class="cl">        <span class="k">if</span> (minimaxDepth == <span class="n">0</span> || model.isGameOver() == <span class="k">true</span>){
+</span><span class="cl">            <span class="k">return</span> model.checkWhoIsWinning(player);
+</span><span class="cl">        }
+</span><span class="cl">        OthelloModel.Player currentPlayer = model.getCurrentPlayer();
+</span><span class="cl">        List&lt;OthelloModel.Move&gt; moves = model.getValidMoves(currentPlayer);
+</span><span class="cl">        <span class="k">if</span>(moves.isEmpty() == <span class="k">true</span>){
+</span><span class="cl">            OthelloModel copy = model.copyBoard();
+</span><span class="cl">            copy.switchTurn();
+</span><span class="cl">            <span class="k">return</span> minimax(copy, minimaxDepth - <span class="n">1</span>, !maxmize, player);
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">if</span> (maxmize == <span class="k">true</span>){
+</span><span class="cl">            <span class="k">return</span> getMaxScore(model, moves, minimaxDepth, player);
+</span><span class="cl">        } <span class="k">else</span> {
+</span><span class="cl">            <span class="k">return</span> getMinScore(model, moves, minimaxDepth, player);
+</span><span class="cl">        }
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">private</span> <span class="k">int</span> getMaxScore(OthelloModel model, List&lt;OthelloModel.Move&gt; moves, <span class="k">int</span> minimaxDepth, OthelloModel.Player player){
+</span><span class="cl">        <span class="k">int</span> bestScore = Integer.MIN_VALUE;
+</span><span class="cl">        <span class="k">for</span> (OthelloModel.Move move: moves) {
+</span><span class="cl">            OthelloModel copy = model.copyBoard();
+</span><span class="cl">            copy.makeMove(move.row, move.column, model.getCurrentPlayer());
+</span><span class="cl">            <span class="k">int</span> score = minimax(copy, minimaxDepth - <span class="n">1</span>, <span class="k">false</span>, player);
+</span><span class="cl">            bestScore = Math.max(bestScore, score);
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">return</span> bestScore;
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">private</span> <span class="k">int</span> getMinScore(OthelloModel model, List&lt;OthelloModel.Move&gt; moves, <span class="k">int</span> minimaxDepth, OthelloModel.Player player){
+</span><span class="cl">        <span class="k">int</span> bestScore = Integer.MAX_VALUE;
+</span><span class="cl">        <span class="k">for</span> (OthelloModel.Move move: moves) {
+</span><span class="cl">            OthelloModel copy = model.copyBoard();
+</span><span class="cl">            copy.makeMove(move.row, move.column, model.getCurrentPlayer());
+</span><span class="cl">            <span class="k">int</span> score = minimax(copy, minimaxDepth - <span class="n">1</span>, <span class="k">true</span>, player);
+</span><span class="cl">            bestScore = Math.min(bestScore, score);
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">return</span> bestScore;
+</span><span class="cl">    }
+</span><span class="cl">}
+</span></pre>
+</div>
+<div class="src-pane" id="p9" hidden data-path="java-source/othello/OthelloGUI.java" data-meta="194 LINES">
+<pre class="code"><span class="cl"><span class="k">import</span> javax.swing.*;
+</span><span class="cl"><span class="k">import</span> java.awt.*;
+</span><span class="cl"><span class="k">import</span> java.awt.event.ActionEvent;
+</span><span class="cl"> 
+</span><span class="cl"><span class="k">public</span> <span class="k">class</span> OthelloGUI <span class="k">extends</span> JFrame {
+</span><span class="cl">    <span class="k">private</span> <span class="k">final</span> OthelloModel model;
+</span><span class="cl">    <span class="k">private</span> <span class="k">final</span> OthelloComputerAndAI computerAndAI;
+</span><span class="cl">    <span class="k">private</span> <span class="k">final</span> JButton[][] buttons;
+</span><span class="cl">    <span class="k">private</span> JLabel statusLabel;
+</span><span class="cl">    <span class="k">private</span> JLabel scoreLabel;
+</span><span class="cl">    <span class="k">private</span> JComboBox&lt;OthelloComputerAndAI.CompType&gt; computerSelection;
+</span><span class="cl">    <span class="k">private</span> JSpinner depthSpinner;
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">private</span> <span class="k">static</span> <span class="k">final</span> OthelloModel.Player human = OthelloModel.Player.BLACK;
+</span><span class="cl">    <span class="k">private</span> <span class="k">static</span> <span class="k">final</span> OthelloModel.Player computer_And_Ai = OthelloModel.Player.WHITE;
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">public</span> OthelloGUI() {
+</span><span class="cl">        model = <span class="k">new</span> OthelloModel();
+</span><span class="cl">        computerAndAI = <span class="k">new</span> OthelloComputerAndAI();
+</span><span class="cl">        buttons = <span class="k">new</span> JButton[model.getSize()][model.getSize()];
+</span><span class="cl">        setupFrame();
+</span><span class="cl">        setupTopPanel();
+</span><span class="cl">        setupBoard();
+</span><span class="cl">        setupBottomPanel();
+</span><span class="cl">        refreshBoard();
+</span><span class="cl">        setVisible(<span class="k">true</span>);
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">private</span> <span class="k">void</span> setupFrame() {
+</span><span class="cl">        setTitle(<span class="s">&quot;Othello - Human vs Computer/AI&quot;</span>);
+</span><span class="cl">        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+</span><span class="cl">        setLayout(<span class="k">new</span> BorderLayout());
+</span><span class="cl">        setSize(<span class="n">750</span>, <span class="n">750</span>);
+</span><span class="cl">        setLocationRelativeTo(<span class="k">null</span>);
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">private</span> <span class="k">void</span> setupTopPanel() {
+</span><span class="cl">        JPanel topPanel = <span class="k">new</span> JPanel();
+</span><span class="cl">        computerSelection = <span class="k">new</span> JComboBox&lt;&gt;(OthelloComputerAndAI.CompType.values());
+</span><span class="cl">        depthSpinner = <span class="k">new</span> JSpinner(<span class="k">new</span> SpinnerNumberModel(<span class="n">3</span>, <span class="n">1</span>, <span class="n">6</span>, <span class="n">1</span>));
+</span><span class="cl">        JButton newGameButton = <span class="k">new</span> JButton(<span class="s">&quot;New Game&quot;</span>);
+</span><span class="cl">        newGameButton.addActionListener(e -&gt; {
+</span><span class="cl">            model.resetGame();
+</span><span class="cl">            refreshBoard();
+</span><span class="cl">        });
+</span><span class="cl">        topPanel.add(<span class="k">new</span> JLabel(<span class="s">&quot;Computer/AI: &quot;</span>));
+</span><span class="cl">        topPanel.add(computerSelection);
+</span><span class="cl">        topPanel.add(<span class="k">new</span> JLabel(<span class="s">&quot;Minimax Depth &quot;</span>));
+</span><span class="cl">        topPanel.add(depthSpinner);
+</span><span class="cl">        topPanel.add(newGameButton);
+</span><span class="cl">        add(topPanel, BorderLayout.NORTH);
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">private</span> <span class="k">void</span> setupBoard() {
+</span><span class="cl">        JPanel boardPanel = <span class="k">new</span> JPanel(<span class="k">new</span> GridLayout(<span class="n">8</span>, <span class="n">8</span>));
+</span><span class="cl">        boardPanel.setBackground(<span class="k">new</span> Color(<span class="n">0</span>, <span class="n">100</span>, <span class="n">0</span>));
+</span><span class="cl">        <span class="k">for</span> (<span class="k">int</span> i = <span class="n">0</span>; i &lt; model.getSize(); i++) {
+</span><span class="cl">            <span class="k">for</span> (<span class="k">int</span> j = <span class="n">0</span>; j &lt; model.getSize(); j++) {
+</span><span class="cl">                JButton button = <span class="k">new</span> JButton();
+</span><span class="cl">                button.setBackground((<span class="k">new</span> Color(<span class="n">0</span>, <span class="n">130</span>, <span class="n">0</span>)));
+</span><span class="cl">                button.setOpaque(<span class="k">true</span>);
+</span><span class="cl">                button.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+</span><span class="cl">                button.setFocusPainted(<span class="k">false</span>);
+</span><span class="cl">                <span class="k">final</span> <span class="k">int</span> row = i;
+</span><span class="cl">                <span class="k">final</span> <span class="k">int</span> column = j;
+</span><span class="cl">                button.addActionListener((ActionEvent e) -&gt; handleHumanMove(row, column)
+</span><span class="cl">                );
+</span><span class="cl">                buttons[i][j] = button;
+</span><span class="cl">                boardPanel.add(button);
+</span><span class="cl">            }
+</span><span class="cl">        }
+</span><span class="cl">        add(boardPanel, BorderLayout.CENTER);
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">private</span> <span class="k">void</span> setupBottomPanel() {
+</span><span class="cl">        JPanel bottomPanel = <span class="k">new</span> JPanel(<span class="k">new</span> GridLayout(<span class="n">2</span>, <span class="n">1</span>));
+</span><span class="cl">        statusLabel = <span class="k">new</span> JLabel(<span class="s">&quot;Your turn. You are Black.&quot;</span>, SwingConstants.CENTER);
+</span><span class="cl">        scoreLabel = <span class="k">new</span> JLabel(<span class="s">&quot;&quot;</span>, SwingConstants.CENTER);
+</span><span class="cl">        bottomPanel.add(statusLabel);
+</span><span class="cl">        bottomPanel.add(scoreLabel);
+</span><span class="cl">        add(bottomPanel, BorderLayout.SOUTH);
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">private</span> <span class="k">void</span> handleHumanMove(<span class="k">int</span> row, <span class="k">int</span> column) {
+</span><span class="cl">        <span class="k">if</span> (model.isGameOver() == <span class="k">true</span>) {
+</span><span class="cl">            <span class="k">return</span>;
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">if</span> (model.getCurrentPlayer() != human) {
+</span><span class="cl">            <span class="k">return</span>;
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">boolean</span> moveMade = model.makeMove(row, column, human);
+</span><span class="cl">        <span class="k">if</span> (moveMade == <span class="k">false</span>) {
+</span><span class="cl">            JOptionPane.showMessageDialog(<span class="k">this</span>, <span class="s">&quot;Can&#x27;t do that man&quot;</span>);
+</span><span class="cl">            <span class="k">return</span>;
+</span><span class="cl">        }
+</span><span class="cl">        refreshBoard();
+</span><span class="cl">        <span class="k">if</span> ((model.isGameOver() == <span class="k">false</span>) &amp;&amp; (model.getCurrentPlayer() == computer_And_Ai)) {
+</span><span class="cl">            computerMove();
+</span><span class="cl">        }
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">private</span> <span class="k">void</span> computerMove() {
+</span><span class="cl">        Timer timer = <span class="k">new</span> Timer(<span class="n">500</span>, e -&gt; {
+</span><span class="cl">            OthelloComputerAndAI.CompType theType = (OthelloComputerAndAI.CompType) computerSelection.getSelectedItem();
+</span><span class="cl">            <span class="k">int</span> maximizeDepth = (<span class="k">int</span>) depthSpinner.getValue();
+</span><span class="cl">            OthelloModel.Move move = computerAndAI.getComputerMove(model, theType, computer_And_Ai, maximizeDepth);
+</span><span class="cl">            <span class="k">if</span> (move != <span class="k">null</span>) {
+</span><span class="cl">                model.makeMove(move.row, move.column, computer_And_Ai);
+</span><span class="cl">            }
+</span><span class="cl">            refreshBoard();
+</span><span class="cl">            <span class="k">if</span> (model.isGameOver() == <span class="k">true</span>) {
+</span><span class="cl">                showGameOverMessage();
+</span><span class="cl">            }
+</span><span class="cl">        });
+</span><span class="cl">        timer.setRepeats(<span class="k">false</span>);
+</span><span class="cl">        timer.start();
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">private</span> <span class="k">void</span> refreshBoard() {
+</span><span class="cl">        <span class="k">for</span> (<span class="k">int</span> i = <span class="n">0</span>; i &lt; model.getSize(); i++) {
+</span><span class="cl">            <span class="k">for</span> (<span class="k">int</span> j = <span class="n">0</span>; j &lt; model.getSize(); j++) {
+</span><span class="cl">                JButton button = buttons[i][j];
+</span><span class="cl">                button.setText(<span class="s">&quot;&quot;</span>);
+</span><span class="cl">                button.setIcon(<span class="k">null</span>);
+</span><span class="cl">                OthelloModel.Square square = model.getSquare(i, j);
+</span><span class="cl">                <span class="k">if</span> (square == OthelloModel.Square.BLACK) {
+</span><span class="cl">                    displayBlackPiece(button);
+</span><span class="cl">                } <span class="k">else</span> <span class="k">if</span> (square == OthelloModel.Square.WHITE) {
+</span><span class="cl">                    displayWhitePiece(button);
+</span><span class="cl">                } <span class="k">else</span> <span class="k">if</span> (model.getCurrentPlayer() == human &amp;&amp; model.isValidMove(i, j, human)) {
+</span><span class="cl">                    displayPossibleMove(button);
+</span><span class="cl">                } <span class="k">else</span> {
+</span><span class="cl">                    displayEmptySquare(button);
+</span><span class="cl">                }
+</span><span class="cl">            }
+</span><span class="cl">        }
+</span><span class="cl">        updateScoreLabel();
+</span><span class="cl">        updateStatusLabel();
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">private</span> <span class="k">void</span> displayBlackPiece(JButton button){
+</span><span class="cl">        button.setText(<span class="s">&quot;●&quot;</span>);
+</span><span class="cl">        button.setFont(<span class="k">new</span> Font(<span class="s">&quot;Arial&quot;</span>, Font.BOLD, <span class="n">42</span>));
+</span><span class="cl">        button.setForeground(Color.BLACK);
+</span><span class="cl">        button.setBackground(<span class="k">new</span> Color(<span class="n">0</span>,<span class="n">130</span>,<span class="n">0</span>));
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">private</span> <span class="k">void</span> displayWhitePiece(JButton button){
+</span><span class="cl">        button.setText(<span class="s">&quot;●&quot;</span>);
+</span><span class="cl">        button.setFont(<span class="k">new</span> Font(<span class="s">&quot;Arial&quot;</span>, Font.BOLD, <span class="n">42</span>));
+</span><span class="cl">        button.setForeground(Color.WHITE);
+</span><span class="cl">        button.setBackground(<span class="k">new</span> Color(<span class="n">0</span>,<span class="n">130</span>,<span class="n">0</span>));
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">private</span> <span class="k">void</span> displayPossibleMove(JButton button){
+</span><span class="cl">        button.setText(<span class="s">&quot;●&quot;</span>);
+</span><span class="cl">        button.setFont(<span class="k">new</span> Font(<span class="s">&quot;Arial&quot;</span>, Font.BOLD, <span class="n">42</span>));
+</span><span class="cl">        button.setForeground(Color.YELLOW);
+</span><span class="cl">        button.setBackground(<span class="k">new</span> Color(<span class="n">0</span>,<span class="n">130</span>,<span class="n">0</span>));
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">private</span> <span class="k">void</span> displayEmptySquare(JButton button){
+</span><span class="cl">        button.setText(<span class="s">&quot;&quot;</span>);
+</span><span class="cl">        button.setBackground(<span class="k">new</span> Color(<span class="n">0</span>,<span class="n">130</span>,<span class="n">0</span>));
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">private</span> <span class="k">void</span> updateScoreLabel(){
+</span><span class="cl">        <span class="k">int</span> blackScore = model.countPieces(OthelloModel.Player.BLACK);
+</span><span class="cl">        <span class="k">int</span> whiteScore = model.countPieces(OthelloModel.Player.WHITE);
+</span><span class="cl">        scoreLabel.setText(<span class="s">&quot;Black: &quot;</span> + blackScore + <span class="s">&quot;   White: &quot;</span> + whiteScore);
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">private</span> <span class="k">void</span> updateStatusLabel(){
+</span><span class="cl">        <span class="k">if</span> (model.isGameOver() == <span class="k">true</span>){
+</span><span class="cl">            showGameOverMessage();
+</span><span class="cl">        } <span class="k">else</span> <span class="k">if</span> (model.getCurrentPlayer() == human) {
+</span><span class="cl">            statusLabel.setText(<span class="s">&quot;Your Turn. You are Black&quot;</span>);
+</span><span class="cl">        } <span class="k">else</span> {
+</span><span class="cl">            statusLabel.setText(<span class="s">&quot;Computer thinking...&quot;</span>);
+</span><span class="cl">        }
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">private</span> <span class="k">void</span> showGameOverMessage(){
+</span><span class="cl">        OthelloModel.Player winner = model.getWinner();
+</span><span class="cl">        String message = <span class="s">&quot;Game Over! &quot;</span>;
+</span><span class="cl">        <span class="k">if</span> (winner == <span class="k">null</span>){
+</span><span class="cl">            message = message + <span class="s">&quot;Tie game!!&quot;</span>;
+</span><span class="cl">        } <span class="k">else</span> <span class="k">if</span> (winner == human) {
+</span><span class="cl">            message = message + <span class="s">&quot;YOU WIN!!! CONGRATS!!!&quot;</span>;
+</span><span class="cl">        } <span class="k">else</span> {
+</span><span class="cl">            message = message + <span class="s">&quot;Computer won :(&quot;</span>;
+</span><span class="cl">        }
+</span><span class="cl">        statusLabel.setText(message);
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">public</span> <span class="k">static</span> <span class="k">void</span> main(String[] args){
+</span><span class="cl">        SwingUtilities.invokeLater(OthelloGUI::<span class="k">new</span>);
+</span><span class="cl">    }
+</span><span class="cl">}
+</span></pre>
+</div>
+<div class="src-pane" id="p10" hidden data-path="java-source/pong/GameConstants.java" data-meta="20 LINES">
+<pre class="code"><span class="cl"><span class="k">public</span> <span class="k">class</span> GameConstants {
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">public</span> <span class="k">static</span> <span class="k">final</span> <span class="k">int</span> WINDOW_WIDTH = <span class="n">700</span>;
+</span><span class="cl">    <span class="k">public</span> <span class="k">static</span> <span class="k">final</span> <span class="k">int</span> WINDOW_HEIGHT = <span class="n">500</span>;
+</span><span class="cl">    <span class="k">public</span> <span class="k">static</span> <span class="k">final</span> <span class="k">int</span> BORDER = <span class="n">30</span>;
+</span><span class="cl">    <span class="k">public</span> <span class="k">static</span> <span class="k">final</span> <span class="k">int</span> BALL_SIZE = <span class="n">14</span>;
+</span><span class="cl">    <span class="k">public</span> <span class="k">static</span> <span class="k">final</span> <span class="k">int</span> TIMER_DELAY = <span class="n">16</span>;
+</span><span class="cl">    <span class="k">public</span> <span class="k">static</span> <span class="k">final</span> <span class="k">int</span> PADDLE_WIDTH = <span class="n">12</span>;
+</span><span class="cl">    <span class="k">public</span> <span class="k">static</span> <span class="k">final</span> <span class="k">int</span> PADDLE_HEIGHT = <span class="n">70</span>;
+</span><span class="cl">    <span class="k">public</span> <span class="k">static</span> <span class="k">final</span> <span class="k">int</span> PADDLE_FILLER = <span class="n">10</span>;
+</span><span class="cl">    <span class="k">public</span> <span class="k">static</span> <span class="k">final</span> <span class="k">int</span> SCROLL_AMOUNT = <span class="n">15</span>;
+</span><span class="cl">    <span class="k">public</span> <span class="k">static</span> <span class="k">final</span> <span class="k">int</span> DASH_GAP = <span class="n">20</span>;
+</span><span class="cl">    <span class="k">public</span> <span class="k">static</span> <span class="k">final</span> <span class="k">int</span> DASH_HEIGHT = <span class="n">10</span>;
+</span><span class="cl">    <span class="k">public</span> <span class="k">static</span> <span class="k">final</span> <span class="k">int</span> DASH_WIDTH = <span class="n">2</span>;
+</span><span class="cl">    <span class="k">public</span> <span class="k">static</span> <span class="k">final</span> <span class="k">int</span> SOLO_SCORE_X = BORDER + <span class="n">20</span>;
+</span><span class="cl">    <span class="k">public</span> <span class="k">static</span> <span class="k">final</span> <span class="k">int</span> SOLO_MISSES_X = BORDER + <span class="n">120</span>;
+</span><span class="cl">    <span class="k">public</span> <span class="k">static</span> <span class="k">final</span> <span class="k">int</span> SCORE_Y = <span class="n">20</span>;
+</span><span class="cl">    <span class="k">public</span> <span class="k">static</span> <span class="k">final</span> <span class="k">int</span> CPU_SCORE_OFFSET = <span class="n">100</span>;
+</span><span class="cl">}
+</span></pre>
+</div>
+<div class="src-pane" id="p11" hidden data-path="java-source/pong/PongModel.java" data-meta="212 LINES">
+<pre class="code"><span class="cl"><span class="k">public</span> <span class="k">class</span> PongModel {
+</span><span class="cl">    <span class="k">int</span> ballX;
+</span><span class="cl">    <span class="k">int</span> ballY;
+</span><span class="cl">    <span class="k">int</span> dx = <span class="n">4</span>;
+</span><span class="cl">    <span class="k">int</span> dy = <span class="n">4</span>;
+</span><span class="cl">    <span class="k">int</span> width;
+</span><span class="cl">    <span class="k">int</span> height;
+</span><span class="cl">    <span class="k">int</span> paddleY;
+</span><span class="cl">    String gameMode;
+</span><span class="cl">    <span class="k">int</span> soloScore;
+</span><span class="cl">    <span class="k">int</span> soloMisses;
+</span><span class="cl">    <span class="k">boolean</span> gameOver;
+</span><span class="cl">    <span class="k">boolean</span> ballPause;
+</span><span class="cl">    <span class="k">int</span> pauseTicksRemaining;
+</span><span class="cl">    <span class="k">int</span> cpuPaddleY;
+</span><span class="cl">    <span class="k">int</span> humanScore;
+</span><span class="cl">    <span class="k">int</span> cpuScore;
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">public</span> PongModel(<span class="k">int</span> width, <span class="k">int</span> height, String gameMode) {
+</span><span class="cl">        <span class="k">this</span>.width = width;
+</span><span class="cl">        <span class="k">this</span>.height = height;
+</span><span class="cl">        <span class="k">this</span>.gameMode = gameMode;
+</span><span class="cl">        resetBall();
+</span><span class="cl">        resetPaddle();
+</span><span class="cl">        soloScore = <span class="n">0</span>;
+</span><span class="cl">        soloMisses = <span class="n">0</span>;
+</span><span class="cl">        humanScore = <span class="n">0</span>;
+</span><span class="cl">        cpuScore = <span class="n">0</span>;
+</span><span class="cl">        gameOver = <span class="k">false</span>;
+</span><span class="cl">        ballPause = <span class="k">false</span>;
+</span><span class="cl">        pauseTicksRemaining = <span class="n">0</span>;
+</span><span class="cl">        cpuPaddleY = height / <span class="n">2</span> - GameConstants.PADDLE_HEIGHT / <span class="n">2</span>;
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">public</span> <span class="k">void</span> resetGame() {
+</span><span class="cl">        soloScore = <span class="n">0</span>;
+</span><span class="cl">        soloMisses = <span class="n">0</span>;
+</span><span class="cl">        humanScore = <span class="n">0</span>;
+</span><span class="cl">        cpuScore = <span class="n">0</span>;
+</span><span class="cl">        gameOver = <span class="k">false</span>;
+</span><span class="cl">        dx = <span class="n">4</span>;
+</span><span class="cl">        dy = <span class="n">4</span>;
+</span><span class="cl">        resetPaddle();
+</span><span class="cl">        resetBall();
+</span><span class="cl">        ballPause = <span class="k">false</span>;
+</span><span class="cl">        pauseTicksRemaining = <span class="n">0</span>;
+</span><span class="cl">        cpuPaddleY = height / <span class="n">2</span> - GameConstants.PADDLE_HEIGHT / <span class="n">2</span>;
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">public</span> <span class="k">void</span> pause() {
+</span><span class="cl">        ballPause = <span class="k">true</span>;
+</span><span class="cl">        pauseTicksRemaining = <span class="n">60</span>;
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">public</span> <span class="k">void</span> resetBall() {
+</span><span class="cl">        ballX = width / <span class="n">2</span> - GameConstants.BALL_SIZE / <span class="n">2</span>;
+</span><span class="cl">        ballY = height / <span class="n">2</span> - GameConstants.BALL_SIZE / <span class="n">2</span>;
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">public</span> <span class="k">void</span> resetPaddle() {
+</span><span class="cl">        paddleY = height / <span class="n">2</span> - GameConstants.PADDLE_HEIGHT / <span class="n">2</span>;
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">public</span> <span class="k">void</span> movePaddle(<span class="k">int</span> amount) {
+</span><span class="cl">        paddleY += amount;
+</span><span class="cl">        <span class="k">if</span> (paddleY &lt; GameConstants.BORDER) {
+</span><span class="cl">            paddleY = GameConstants.BORDER;
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">if</span> (paddleY + GameConstants.PADDLE_HEIGHT &gt; height - GameConstants.BORDER) {
+</span><span class="cl">            paddleY = height - GameConstants.BORDER - GameConstants.PADDLE_HEIGHT;
+</span><span class="cl">        }
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">public</span> <span class="k">void</span> cpuMovePaddle() {
+</span><span class="cl">        <span class="k">int</span> cpuCenter = cpuPaddleY + GameConstants.PADDLE_HEIGHT / <span class="n">2</span>;
+</span><span class="cl">        <span class="k">int</span> ballCenter = ballY + GameConstants.BALL_SIZE / <span class="n">2</span>;
+</span><span class="cl">        <span class="k">int</span> cpuSpeed = <span class="n">6</span>;
+</span><span class="cl"> 
+</span><span class="cl">        <span class="k">if</span> (ballCenter &lt; cpuCenter) {
+</span><span class="cl">            cpuPaddleY -= cpuSpeed;
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">if</span> (ballCenter &gt; cpuCenter) {
+</span><span class="cl">            cpuPaddleY += cpuSpeed;
+</span><span class="cl">        }
+</span><span class="cl"> 
+</span><span class="cl">        <span class="k">if</span> (cpuPaddleY &lt; GameConstants.BORDER) {
+</span><span class="cl">            cpuPaddleY = GameConstants.BORDER;
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">if</span> (cpuPaddleY + GameConstants.PADDLE_HEIGHT &gt; height - GameConstants.BORDER) {
+</span><span class="cl">            cpuPaddleY = height - GameConstants.BORDER - GameConstants.PADDLE_HEIGHT;
+</span><span class="cl">        }
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">public</span> <span class="k">void</span> bouncing(<span class="k">int</span> paddleTopY) {
+</span><span class="cl">        <span class="k">int</span> paddleCenter = paddleTopY + GameConstants.PADDLE_HEIGHT / <span class="n">2</span>;
+</span><span class="cl">        <span class="k">int</span> ballCenter = ballY + GameConstants.BALL_SIZE / <span class="n">2</span>;
+</span><span class="cl">        <span class="k">int</span> angle = ballCenter - paddleCenter;
+</span><span class="cl"> 
+</span><span class="cl">        <span class="k">if</span> (angle &lt;= -<span class="n">20</span>) {
+</span><span class="cl">            dy = -<span class="n">10</span>;
+</span><span class="cl">        } <span class="k">else</span> <span class="k">if</span> (angle &lt;= -<span class="n">8</span> &amp;&amp; angle &gt; -<span class="n">20</span>) {
+</span><span class="cl">            dy = -<span class="n">8</span>;
+</span><span class="cl">        } <span class="k">else</span> <span class="k">if</span> (angle &gt;= -<span class="n">8</span> &amp;&amp; angle &lt; <span class="n">0</span>) {
+</span><span class="cl">            dy = -<span class="n">5</span>;
+</span><span class="cl">        } <span class="k">else</span> <span class="k">if</span> (angle == <span class="n">0</span>) {
+</span><span class="cl">            dy = <span class="n">0</span>;
+</span><span class="cl">        } <span class="k">else</span> <span class="k">if</span> (angle &gt; <span class="n">0</span> &amp;&amp; angle &lt;= <span class="n">8</span>) {
+</span><span class="cl">            dy = <span class="n">5</span>;
+</span><span class="cl">        } <span class="k">else</span> <span class="k">if</span> (angle &gt; <span class="n">8</span> &amp;&amp; angle &lt;= <span class="n">20</span>) {
+</span><span class="cl">            dy = <span class="n">8</span>;
+</span><span class="cl">        } <span class="k">else</span> <span class="k">if</span> (angle &gt; <span class="n">20</span>) {
+</span><span class="cl">            dy = <span class="n">10</span>;
+</span><span class="cl">        }
+</span><span class="cl"> 
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">public</span> <span class="k">void</span> tick() {
+</span><span class="cl">        <span class="k">if</span> (gameOver == <span class="k">true</span>) {
+</span><span class="cl">            <span class="k">return</span>;
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">if</span> (ballPause == <span class="k">true</span>) {
+</span><span class="cl">            pauseTicksRemaining--;
+</span><span class="cl">            <span class="k">if</span> (pauseTicksRemaining &lt;= <span class="n">0</span>) {
+</span><span class="cl">                ballPause = <span class="k">false</span>;
+</span><span class="cl">            }
+</span><span class="cl">            <span class="k">return</span>;
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">if</span> (gameMode.equals(<span class="s">&quot;cpu&quot;</span>)) {
+</span><span class="cl">            cpuMovePaddle();
+</span><span class="cl">        }
+</span><span class="cl">        ballX += dx;
+</span><span class="cl">        ballY += dy;
+</span><span class="cl">        <span class="k">if</span> (ballY &lt;= GameConstants.BORDER){
+</span><span class="cl">            ballY = GameConstants.BORDER;
+</span><span class="cl">            dy = -dy;
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">if</span> (ballY + GameConstants.BALL_SIZE &gt;= height - GameConstants.BORDER) {
+</span><span class="cl">            ballY = height - GameConstants.BORDER -GameConstants.BALL_SIZE;
+</span><span class="cl">            dy = -dy;
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">int</span> paddleX;
+</span><span class="cl">        <span class="k">if</span> (gameMode.equals(<span class="s">&quot;solo&quot;</span>)) {
+</span><span class="cl">            paddleX = width - GameConstants.BORDER - GameConstants.PADDLE_FILLER- GameConstants.PADDLE_WIDTH;
+</span><span class="cl">        } <span class="k">else</span> {
+</span><span class="cl">          paddleX = GameConstants.BORDER + GameConstants.PADDLE_FILLER;
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">boolean</span> overlapsUpandDown = ballY + GameConstants.BALL_SIZE &gt;= paddleY &amp;&amp;
+</span><span class="cl">                ballY &lt;= paddleY + GameConstants.PADDLE_HEIGHT;
+</span><span class="cl">        <span class="k">boolean</span> overlapsSidetoSide = ballX + GameConstants.BALL_SIZE &gt;= paddleX &amp;&amp;
+</span><span class="cl">                ballX &lt;= paddleX + GameConstants.PADDLE_WIDTH;;
+</span><span class="cl">        <span class="k">if</span> (gameMode.equals(<span class="s">&quot;solo&quot;</span>)) {
+</span><span class="cl">            <span class="k">if</span>(ballX &lt;= GameConstants.BORDER){
+</span><span class="cl">                ballX = GameConstants.BORDER;
+</span><span class="cl">                dx = -dx;
+</span><span class="cl">            }
+</span><span class="cl">            <span class="k">if</span> (dx &gt; <span class="n">0</span> &amp;&amp; overlapsUpandDown &amp;&amp; overlapsSidetoSide) {
+</span><span class="cl">                ballX = paddleX - GameConstants.BALL_SIZE;
+</span><span class="cl">                dx = -dx;
+</span><span class="cl">                soloScore++;
+</span><span class="cl">                bouncing(paddleY);
+</span><span class="cl">            }
+</span><span class="cl">        }
+</span><span class="cl"> 
+</span><span class="cl">        <span class="k">if</span> (gameMode.equals(<span class="s">&quot;cpu&quot;</span>)) {
+</span><span class="cl">            <span class="k">if</span>(dx &lt; <span class="n">0</span> &amp;&amp; overlapsUpandDown &amp;&amp; overlapsSidetoSide){
+</span><span class="cl">                ballX = paddleX + GameConstants.PADDLE_WIDTH;
+</span><span class="cl">                dx = -dx;
+</span><span class="cl">                bouncing(paddleY);
+</span><span class="cl">            }
+</span><span class="cl">            <span class="k">int</span> cpuPaddleX = width - GameConstants.BORDER - GameConstants.PADDLE_FILLER - GameConstants.PADDLE_WIDTH;
+</span><span class="cl"> 
+</span><span class="cl">            <span class="k">boolean</span> cpuOverlapsUpandDown = ballY + GameConstants.BALL_SIZE &gt;= cpuPaddleY &amp;&amp;
+</span><span class="cl">                    ballY &lt;= cpuPaddleY + GameConstants.PADDLE_HEIGHT;
+</span><span class="cl">            <span class="k">boolean</span> cpuOverlapsSidetoSide = ballX + GameConstants.BALL_SIZE &gt;= cpuPaddleX &amp;&amp;
+</span><span class="cl">                    ballX &lt;= cpuPaddleX + GameConstants.PADDLE_WIDTH;
+</span><span class="cl">            <span class="k">if</span> (dx &gt; <span class="n">0</span> &amp;&amp; cpuOverlapsUpandDown &amp;&amp; cpuOverlapsSidetoSide) {
+</span><span class="cl">                ballX = cpuPaddleX - GameConstants.BALL_SIZE;
+</span><span class="cl">                dx = -dx;
+</span><span class="cl">                bouncing(cpuPaddleY);
+</span><span class="cl">            }
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">if</span> (gameMode.equals(<span class="s">&quot;solo&quot;</span>)) {
+</span><span class="cl">            <span class="k">if</span> (ballX + GameConstants.BALL_SIZE &gt;= width - GameConstants.BORDER) {
+</span><span class="cl">                soloMisses++;
+</span><span class="cl">                <span class="k">if</span> (soloMisses &gt;= <span class="n">3</span>) {
+</span><span class="cl">                    gameOver = <span class="k">true</span>;
+</span><span class="cl">                }
+</span><span class="cl">                resetBall();
+</span><span class="cl">                pause();
+</span><span class="cl">            }
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">if</span> (gameMode.equals(<span class="s">&quot;cpu&quot;</span>)) {
+</span><span class="cl">            <span class="k">if</span> (ballX + GameConstants.BALL_SIZE&lt;= GameConstants.BORDER) {
+</span><span class="cl">                cpuScore++;
+</span><span class="cl">                <span class="k">if</span> (cpuScore &gt;= <span class="n">3</span>) {
+</span><span class="cl">                    gameOver = <span class="k">true</span>;
+</span><span class="cl">                }
+</span><span class="cl">                resetBall();
+</span><span class="cl">                pause();
+</span><span class="cl">                dx = <span class="n">4</span>;
+</span><span class="cl">            }
+</span><span class="cl">            <span class="k">if</span> (ballX + GameConstants.BALL_SIZE &gt;= width - GameConstants.BORDER) {
+</span><span class="cl">                humanScore++;
+</span><span class="cl">                <span class="k">if</span> (humanScore &gt;= <span class="n">3</span>) {
+</span><span class="cl">                    gameOver = <span class="k">true</span>;
+</span><span class="cl">                }
+</span><span class="cl">                resetBall();
+</span><span class="cl">                pause();
+</span><span class="cl">                dx = -<span class="n">4</span>;
+</span><span class="cl">            }
+</span><span class="cl">        }
+</span><span class="cl">    }
+</span><span class="cl">}
+</span></pre>
+</div>
+<div class="src-pane" id="p12" hidden data-path="java-source/pong/PongPanel.java" data-meta="95 LINES">
+<pre class="code"><span class="cl"><span class="k">import</span> javax.swing.JPanel;
+</span><span class="cl"><span class="k">import</span> java.awt.*;
+</span><span class="cl"><span class="k">import</span> javax.swing.Timer;
+</span><span class="cl"><span class="k">import</span> javax.swing.JOptionPane;
+</span><span class="cl"> 
+</span><span class="cl"><span class="k">public</span> <span class="k">class</span> PongPanel <span class="k">extends</span> JPanel{
+</span><span class="cl">    <span class="k">private</span> String gameMode;
+</span><span class="cl">    <span class="k">private</span> PongModel model;
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">public</span> PongPanel(String gameMode){
+</span><span class="cl">        <span class="k">this</span>.gameMode = gameMode;
+</span><span class="cl">        model = <span class="k">new</span> PongModel(GameConstants.WINDOW_WIDTH,GameConstants.WINDOW_HEIGHT, gameMode);
+</span><span class="cl">        Timer timer = <span class="k">new</span> Timer(GameConstants.TIMER_DELAY,e -&gt; {
+</span><span class="cl">            model.tick();
+</span><span class="cl">            repaint();
+</span><span class="cl"> 
+</span><span class="cl">            <span class="k">if</span> (model.gameOver == <span class="k">true</span>){
+</span><span class="cl">                String message = <span class="s">&quot;&quot;</span>;
+</span><span class="cl">                <span class="k">if</span> (gameMode.equals(<span class="s">&quot;solo&quot;</span>)){
+</span><span class="cl">                    message = <span class="s">&quot;Game Over! Final Score: &quot;</span> + model.soloScore + <span class="s">&quot;\nPlay Again?&quot;</span>;
+</span><span class="cl">                }
+</span><span class="cl">                <span class="k">if</span> (gameMode.equals(<span class="s">&quot;cpu&quot;</span>)){
+</span><span class="cl">                    String winner = <span class="s">&quot;&quot;</span>;
+</span><span class="cl">                    <span class="k">if</span> (model.humanScore &gt;= <span class="n">3</span>){
+</span><span class="cl">                        winner = <span class="s">&quot;You win!&quot;</span>;
+</span><span class="cl">                    }
+</span><span class="cl">                    <span class="k">if</span> (model.cpuScore &gt;= <span class="n">3</span>){
+</span><span class="cl">                        winner = <span class="s">&quot;CPU wins!&quot;</span>;
+</span><span class="cl">                    }
+</span><span class="cl">                    message = winner + <span class="s">&quot;\nFinal Score - You: &quot;</span> + model.humanScore + <span class="s">&quot;, CPU: &quot;</span> + model.cpuScore + <span class="s">&quot;\nPlay Again?&quot;</span>;
+</span><span class="cl">                }
+</span><span class="cl">                <span class="k">int</span> choice = JOptionPane.showConfirmDialog(
+</span><span class="cl">                        <span class="k">this</span>,
+</span><span class="cl">                        message,
+</span><span class="cl">                        <span class="s">&quot;Pong&quot;</span>,
+</span><span class="cl">                        JOptionPane.YES_NO_OPTION);
+</span><span class="cl">                <span class="k">if</span> (choice == JOptionPane.YES_OPTION){
+</span><span class="cl">                    model.resetGame();
+</span><span class="cl">                }<span class="k">else</span>{
+</span><span class="cl">                    System.exit(<span class="n">0</span>);
+</span><span class="cl">                }
+</span><span class="cl">            }
+</span><span class="cl">        });
+</span><span class="cl">        timer.start();
+</span><span class="cl">        addMouseWheelListener(e -&gt;{
+</span><span class="cl">            <span class="k">int</span> scrollAmount = e.getWheelRotation() * GameConstants.SCROLL_AMOUNT;
+</span><span class="cl">            model.movePaddle(scrollAmount);
+</span><span class="cl">            repaint();
+</span><span class="cl">        });
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    @Override
+</span><span class="cl">    <span class="k">protected</span> <span class="k">void</span> paintComponent(Graphics g){
+</span><span class="cl">        <span class="k">super</span>.paintComponent(g);
+</span><span class="cl">        g.setColor(Color.BLACK);
+</span><span class="cl">        g.fillRect(<span class="n">0</span>,<span class="n">0</span>,getWidth(),getHeight());
+</span><span class="cl">        g.setColor(Color.DARK_GRAY);
+</span><span class="cl">        g.drawRect(GameConstants.BORDER,GameConstants.BORDER, getWidth() - <span class="n">2</span>* GameConstants.BORDER, getHeight() - <span class="n">2</span> * GameConstants.BORDER);
+</span><span class="cl">        <span class="k">if</span> (gameMode.equals(<span class="s">&quot;cpu&quot;</span>)){
+</span><span class="cl">            <span class="k">int</span> centerX = GameConstants.DASH_WIDTH / <span class="n">2</span>;
+</span><span class="cl">            g.setColor(Color.DARK_GRAY);
+</span><span class="cl">            <span class="k">for</span> (<span class="k">int</span> y = GameConstants.BORDER; y &lt; getHeight() - GameConstants.BORDER; y += GameConstants.DASH_GAP){
+</span><span class="cl">                g.fillRect(centerX - GameConstants.DASH_WIDTH, y, GameConstants.DASH_WIDTH, GameConstants.DASH_HEIGHT);
+</span><span class="cl">            }
+</span><span class="cl">        }
+</span><span class="cl">        g.setColor(Color.WHITE);
+</span><span class="cl">        g.fillOval(model.ballX, model.ballY, GameConstants.BALL_SIZE, GameConstants.BALL_SIZE);
+</span><span class="cl">        <span class="k">int</span> paddleX;
+</span><span class="cl">        <span class="k">if</span> (gameMode.equals(<span class="s">&quot;solo&quot;</span>)){
+</span><span class="cl">            paddleX = getWidth() - GameConstants.BORDER - GameConstants.PADDLE_FILLER - GameConstants.PADDLE_WIDTH;
+</span><span class="cl">            g.fillRect(paddleX, model.paddleY, GameConstants.PADDLE_WIDTH, GameConstants.PADDLE_HEIGHT);
+</span><span class="cl"> 
+</span><span class="cl">        }
+</span><span class="cl"> 
+</span><span class="cl">        <span class="k">if</span> (gameMode.equals(<span class="s">&quot;cpu&quot;</span>)){
+</span><span class="cl">            paddleX = GameConstants.BORDER + GameConstants.PADDLE_FILLER;
+</span><span class="cl">            <span class="k">int</span> cpuPaddleX = getWidth() - GameConstants.BORDER - GameConstants.PADDLE_FILLER - GameConstants.PADDLE_WIDTH;
+</span><span class="cl">            g.fillRect(cpuPaddleX, model.cpuPaddleY, GameConstants.PADDLE_WIDTH, GameConstants.PADDLE_HEIGHT);
+</span><span class="cl">            g.fillRect(paddleX, model.paddleY, GameConstants.PADDLE_WIDTH, GameConstants.PADDLE_HEIGHT);
+</span><span class="cl"> 
+</span><span class="cl">        }
+</span><span class="cl"> 
+</span><span class="cl">        g.setColor(Color.WHITE);
+</span><span class="cl">        <span class="k">if</span> (gameMode.equals(<span class="s">&quot;solo&quot;</span>)){
+</span><span class="cl">            g.drawString(<span class="s">&quot;Score: &quot;</span> + model.soloScore, GameConstants.SOLO_SCORE_X, GameConstants.SCORE_Y);
+</span><span class="cl">            g.drawString(<span class="s">&quot;Misses: &quot;</span> + model.soloMisses, GameConstants.SOLO_MISSES_X, GameConstants.SCORE_Y);
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">if</span> (gameMode.equals(<span class="s">&quot;cpu&quot;</span>)){
+</span><span class="cl">            g.drawString(<span class="s">&quot;YOU: &quot;</span> + model.humanScore, GameConstants.SOLO_SCORE_X, GameConstants.SCORE_Y);
+</span><span class="cl">            g.drawString(<span class="s">&quot;CPU: &quot;</span> + model.cpuScore, getWidth() - GameConstants.BORDER - GameConstants.CPU_SCORE_OFFSET, GameConstants.SCORE_Y);
+</span><span class="cl">        }
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">}
+</span></pre>
+</div>
+<div class="src-pane" id="p13" hidden data-path="java-source/pong/PongLauncher.java" data-meta="22 LINES">
+<pre class="code"><span class="cl"><span class="k">import</span> javax.swing.JFrame;
+</span><span class="cl"><span class="k">import</span> java.awt.Dimension;
+</span><span class="cl"> 
+</span><span class="cl"><span class="k">public</span> <span class="k">class</span> PongLauncher {
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">public</span> <span class="k">static</span> <span class="k">void</span> main(String[] args){
+</span><span class="cl">        <span class="k">if</span> (args.length != <span class="n">1</span> || (!args[<span class="n">0</span>].equals(<span class="s">&quot;solo&quot;</span>) &amp;&amp; (!args[<span class="n">0</span>].equals(<span class="s">&quot;cpu&quot;</span>)))){
+</span><span class="cl">            System.err.println(<span class="s">&quot;Usage: java PongLauncher &lt;solo|cpu&gt;&quot;</span>);
+</span><span class="cl">            System.exit(<span class="n">1</span>);
+</span><span class="cl">        }
+</span><span class="cl">        JFrame frame = <span class="k">new</span> JFrame(<span class="s">&quot;Pong&quot;</span>);
+</span><span class="cl">        PongPanel panel = <span class="k">new</span> PongPanel(args[<span class="n">0</span>]);
+</span><span class="cl">        panel.setPreferredSize(<span class="k">new</span> Dimension(GameConstants.WINDOW_WIDTH, GameConstants.WINDOW_HEIGHT));
+</span><span class="cl">        frame.add(panel);
+</span><span class="cl">        frame.pack();
+</span><span class="cl">        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+</span><span class="cl">        frame.setResizable(<span class="k">false</span>);
+</span><span class="cl">        frame.setLocationRelativeTo(<span class="k">null</span>);
+</span><span class="cl">        frame.setVisible(<span class="k">true</span>);
+</span><span class="cl">    }
+</span><span class="cl">}
+</span></pre>
+</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var buttons = [].slice.call(document.querySelectorAll(".src-file"));
+  var pathEl = document.getElementById("srcPath");
+  var metaEl = document.getElementById("srcMeta");
+
+  function show(id) {
+    buttons.forEach(function (b) {
+      var on = b.getAttribute("data-pane") === id;
+      b.classList.toggle("is-active", on);
+    });
+    [].slice.call(document.querySelectorAll(".src-pane")).forEach(function (p) {
+      p.hidden = p.id !== id;
+      if (!p.hidden) {
+        pathEl.textContent = p.getAttribute("data-path");
+        metaEl.textContent = p.getAttribute("data-meta");
+      }
+    });
+  }
+
+  buttons.forEach(function (b) {
+    b.addEventListener("click", function () {
+      show(b.getAttribute("data-pane"));
+      // Switching files while scrolled deep into a long one used to drop you
+      // into the middle of the new file. Pull the top of the viewer back into
+      // view, but only when it has actually scrolled off.
+      var viewer = document.querySelector(".src-viewer");
+      if (viewer.getBoundingClientRect().top < 0) {
+        viewer.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    });
+  });
+
+  if (buttons.length) show(buttons[0].getAttribute("data-pane"));
+})();
+</script>
+
+<footer class="arcade-footer">
+  <p><a href="../index.html">&#9664; BACK TO THE ARCADE</a></p>
+</footer>
+
+<script src="../js/invaders-bg.js"></script>
+</body>
+</html>

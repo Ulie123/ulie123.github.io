@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PONG SOURCE — The Arcade</title>
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../css/arcade.css" />
+<link rel="stylesheet" href="../css/home.css" />
+<link rel="stylesheet" href="../css/source.css" />
+</head>
+<body>
+
+<canvas id="bg-invaders" aria-hidden="true"></canvas>
+<div class="bg-grid" aria-hidden="true"></div>
+<div class="bg-vignette" aria-hidden="true"></div>
+<div class="bg-scanlines" aria-hidden="true"></div>
+
+<div class="wrap">
+
+  <div class="shell-bar">
+    <div>
+      <h1 class="shell-title">PONG &mdash; SOURCE</h1>
+      <p class="shell-sub">10 files, shown exactly as they ship</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <a class="btn " href="../games/pong/index.html">&#9654; PLAY</a>
+      <a class="btn btn-pink" href="../index.html">&#9664; ARCADE</a>
+    </div>
+  </div>
+
+  <div class="src-intro">
+      <p><code>pong-model.js</code> is the physics and the scoring; <code>pong-panel.js</code> owns the canvas and the 16&nbsp;ms tick, the same split <code>PongModel</code> and <code>PongPanel</code> had in Java.</p>
+      <p>Gameplay was ported without changes. The only edit is cosmetic: the centre net used to be drawn at x&nbsp;=&nbsp;−1, off the left edge of the screen.</p>
+  </div>
+
+  <div class="src-layout">
+    <nav class="src-files" aria-label="Files">
+      <p class="src-group">BROWSER — JAVASCRIPT</p>
+      <button class="src-file" type="button" data-pane="p0">game-constants.js<span class="src-note">every tunable number</span></button>
+      <button class="src-file" type="button" data-pane="p1">pong-model.js<span class="src-note">movement + scoring</span></button>
+      <button class="src-file" type="button" data-pane="p2">pong-panel.js<span class="src-note">canvas + game loop</span></button>
+      <button class="src-file" type="button" data-pane="p3">main.js<span class="src-note">mode select</span></button>
+      <p class="src-group">BROWSER — MARKUP & STYLE</p>
+      <button class="src-file" type="button" data-pane="p4">index.html<span class="src-note">page structure</span></button>
+      <button class="src-file" type="button" data-pane="p5">style.css<span class="src-note">playfield styling</span></button>
+      <p class="src-group">ORIGINAL — JAVA (SWING)</p>
+      <button class="src-file" type="button" data-pane="p6">GameConstants.java<span class="src-note">→ game-constants.js</span></button>
+      <button class="src-file" type="button" data-pane="p7">PongModel.java<span class="src-note">→ pong-model.js</span></button>
+      <button class="src-file" type="button" data-pane="p8">PongPanel.java<span class="src-note">→ pong-panel.js</span></button>
+      <button class="src-file" type="button" data-pane="p9">PongLauncher.java<span class="src-note">→ main.js</span></button>
+    </nav>
+
+    <div class="src-viewer">
+      <div class="src-head">
+        <span class="src-path" id="srcPath"></span>
+        <span class="src-meta" id="srcMeta"></span>
+      </div>
+      <div class="src-body">
+<div class="src-pane" id="p0" hidden data-path="games/pong/js/game-constants.js" data-meta="23 LINES">
+<pre class="code"><span class="cl"><span class="c">/* ==========================================================================</span>
+</span><span class="cl"><span class="c">   game-constants.js  —  port of GameConstants.java</span>
+</span><span class="cl"><span class="c">   Every tunable number lives here and nowhere else, same as the original.</span>
+</span><span class="cl"><span class="c">   ========================================================================== */</span>
+</span><span class="cl">window.GameConstants = Object.freeze({
+</span><span class="cl">  WINDOW_WIDTH:     <span class="n">700</span>,
+</span><span class="cl">  WINDOW_HEIGHT:    <span class="n">500</span>,
+</span><span class="cl">  BORDER:            <span class="n">30</span>,
+</span><span class="cl">  BALL_SIZE:         <span class="n">14</span>,
+</span><span class="cl">  TIMER_DELAY:       <span class="n">16</span>,
+</span><span class="cl">  PADDLE_WIDTH:      <span class="n">12</span>,
+</span><span class="cl">  PADDLE_HEIGHT:     <span class="n">70</span>,
+</span><span class="cl">  PADDLE_FILLER:     <span class="n">10</span>,
+</span><span class="cl">  SCROLL_AMOUNT:     <span class="n">15</span>,
+</span><span class="cl">  DASH_GAP:          <span class="n">20</span>,
+</span><span class="cl">  DASH_HEIGHT:       <span class="n">10</span>,
+</span><span class="cl">  DASH_WIDTH:         <span class="n">2</span>,
+</span><span class="cl">  SOLO_SCORE_X:      <span class="n">30</span> + <span class="n">20</span>,
+</span><span class="cl">  SOLO_MISSES_X:     <span class="n">30</span> + <span class="n">120</span>,
+</span><span class="cl">  SCORE_Y:           <span class="n">20</span>,
+</span><span class="cl">  CPU_SCORE_OFFSET: <span class="n">100</span>
+</span><span class="cl">});
+</span></pre>
+</div>
+<div class="src-pane" id="p1" hidden data-path="games/pong/js/pong-model.js" data-meta="206 LINES">
+<pre class="code"><span class="cl"><span class="c">/* ==========================================================================</span>
+</span><span class="cl"><span class="c">   pong-model.js  —  port of PongModel.java</span>
+</span><span class="cl"><span class="c">   All the rules: movement, bouncing, scoring, game over. Nothing here draws.</span>
+</span><span class="cl"><span class="c">   Ported straight across, including the bounce-angle table.</span>
+</span><span class="cl"><span class="c">   ========================================================================== */</span>
+</span><span class="cl">(<span class="k">function</span> () {
+</span><span class="cl">  <span class="s">&quot;use strict&quot;</span>;
+</span><span class="cl">  <span class="k">var</span> C = window.GameConstants;
+</span><span class="cl"> 
+</span><span class="cl">  <span class="k">function</span> PongModel(width, height, gameMode) {
+</span><span class="cl">    <span class="k">this</span>.width = width;
+</span><span class="cl">    <span class="k">this</span>.height = height;
+</span><span class="cl">    <span class="k">this</span>.gameMode = gameMode;
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">this</span>.dx = <span class="n">4</span>;
+</span><span class="cl">    <span class="k">this</span>.dy = <span class="n">4</span>;
+</span><span class="cl">    <span class="k">this</span>.resetBall();
+</span><span class="cl">    <span class="k">this</span>.resetPaddle();
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">this</span>.soloScore = <span class="n">0</span>;
+</span><span class="cl">    <span class="k">this</span>.soloMisses = <span class="n">0</span>;
+</span><span class="cl">    <span class="k">this</span>.humanScore = <span class="n">0</span>;
+</span><span class="cl">    <span class="k">this</span>.cpuScore = <span class="n">0</span>;
+</span><span class="cl">    <span class="k">this</span>.gameOver = <span class="k">false</span>;
+</span><span class="cl">    <span class="k">this</span>.ballPause = <span class="k">false</span>;
+</span><span class="cl">    <span class="k">this</span>.pauseTicksRemaining = <span class="n">0</span>;
+</span><span class="cl">    <span class="k">this</span>.cpuPaddleY = height / <span class="n">2</span> - C.PADDLE_HEIGHT / <span class="n">2</span>;
+</span><span class="cl">  }
+</span><span class="cl"> 
+</span><span class="cl">  PongModel.prototype.resetGame = <span class="k">function</span> () {
+</span><span class="cl">    <span class="k">this</span>.soloScore = <span class="n">0</span>;
+</span><span class="cl">    <span class="k">this</span>.soloMisses = <span class="n">0</span>;
+</span><span class="cl">    <span class="k">this</span>.humanScore = <span class="n">0</span>;
+</span><span class="cl">    <span class="k">this</span>.cpuScore = <span class="n">0</span>;
+</span><span class="cl">    <span class="k">this</span>.gameOver = <span class="k">false</span>;
+</span><span class="cl">    <span class="k">this</span>.dx = <span class="n">4</span>;
+</span><span class="cl">    <span class="k">this</span>.dy = <span class="n">4</span>;
+</span><span class="cl">    <span class="k">this</span>.resetPaddle();
+</span><span class="cl">    <span class="k">this</span>.resetBall();
+</span><span class="cl">    <span class="k">this</span>.ballPause = <span class="k">false</span>;
+</span><span class="cl">    <span class="k">this</span>.pauseTicksRemaining = <span class="n">0</span>;
+</span><span class="cl">    <span class="k">this</span>.cpuPaddleY = <span class="k">this</span>.height / <span class="n">2</span> - C.PADDLE_HEIGHT / <span class="n">2</span>;
+</span><span class="cl">  };
+</span><span class="cl"> 
+</span><span class="cl">  <span class="c">/* One second of stillness after a point, so you can see what happened. */</span>
+</span><span class="cl">  PongModel.prototype.pause = <span class="k">function</span> () {
+</span><span class="cl">    <span class="k">this</span>.ballPause = <span class="k">true</span>;
+</span><span class="cl">    <span class="k">this</span>.pauseTicksRemaining = <span class="n">60</span>;
+</span><span class="cl">  };
+</span><span class="cl"> 
+</span><span class="cl">  PongModel.prototype.resetBall = <span class="k">function</span> () {
+</span><span class="cl">    <span class="k">this</span>.ballX = <span class="k">this</span>.width / <span class="n">2</span> - C.BALL_SIZE / <span class="n">2</span>;
+</span><span class="cl">    <span class="k">this</span>.ballY = <span class="k">this</span>.height / <span class="n">2</span> - C.BALL_SIZE / <span class="n">2</span>;
+</span><span class="cl">  };
+</span><span class="cl"> 
+</span><span class="cl">  PongModel.prototype.resetPaddle = <span class="k">function</span> () {
+</span><span class="cl">    <span class="k">this</span>.paddleY = <span class="k">this</span>.height / <span class="n">2</span> - C.PADDLE_HEIGHT / <span class="n">2</span>;
+</span><span class="cl">  };
+</span><span class="cl"> 
+</span><span class="cl">  PongModel.prototype.movePaddle = <span class="k">function</span> (amount) {
+</span><span class="cl">    <span class="k">this</span>.paddleY += amount;
+</span><span class="cl">    <span class="k">if</span> (<span class="k">this</span>.paddleY &lt; C.BORDER) <span class="k">this</span>.paddleY = C.BORDER;
+</span><span class="cl">    <span class="k">if</span> (<span class="k">this</span>.paddleY + C.PADDLE_HEIGHT &gt; <span class="k">this</span>.height - C.BORDER) {
+</span><span class="cl">      <span class="k">this</span>.paddleY = <span class="k">this</span>.height - C.BORDER - C.PADDLE_HEIGHT;
+</span><span class="cl">    }
+</span><span class="cl">  };
+</span><span class="cl"> 
+</span><span class="cl">  PongModel.prototype.cpuMovePaddle = <span class="k">function</span> () {
+</span><span class="cl">    <span class="k">var</span> cpuCenter = <span class="k">this</span>.cpuPaddleY + C.PADDLE_HEIGHT / <span class="n">2</span>;
+</span><span class="cl">    <span class="k">var</span> ballCenter = <span class="k">this</span>.ballY + C.BALL_SIZE / <span class="n">2</span>;
+</span><span class="cl">    <span class="k">var</span> cpuSpeed = <span class="n">6</span>;
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">if</span> (ballCenter &lt; cpuCenter) <span class="k">this</span>.cpuPaddleY -= cpuSpeed;
+</span><span class="cl">    <span class="k">if</span> (ballCenter &gt; cpuCenter) <span class="k">this</span>.cpuPaddleY += cpuSpeed;
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">if</span> (<span class="k">this</span>.cpuPaddleY &lt; C.BORDER) <span class="k">this</span>.cpuPaddleY = C.BORDER;
+</span><span class="cl">    <span class="k">if</span> (<span class="k">this</span>.cpuPaddleY + C.PADDLE_HEIGHT &gt; <span class="k">this</span>.height - C.BORDER) {
+</span><span class="cl">      <span class="k">this</span>.cpuPaddleY = <span class="k">this</span>.height - C.BORDER - C.PADDLE_HEIGHT;
+</span><span class="cl">    }
+</span><span class="cl">  };
+</span><span class="cl"> 
+</span><span class="cl">  <span class="c">/* Where on the paddle you hit decides the outgoing angle. Dead centre</span>
+</span><span class="cl"><span class="c">     sends it flat; the edges send it steeply away. */</span>
+</span><span class="cl">  PongModel.prototype.bouncing = <span class="k">function</span> (paddleTopY) {
+</span><span class="cl">    <span class="k">var</span> paddleCenter = paddleTopY + C.PADDLE_HEIGHT / <span class="n">2</span>;
+</span><span class="cl">    <span class="k">var</span> ballCenter = <span class="k">this</span>.ballY + C.BALL_SIZE / <span class="n">2</span>;
+</span><span class="cl">    <span class="k">var</span> angle = ballCenter - paddleCenter;
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">if</span> (angle &lt;= -<span class="n">20</span>) {
+</span><span class="cl">      <span class="k">this</span>.dy = -<span class="n">10</span>;
+</span><span class="cl">    } <span class="k">else</span> <span class="k">if</span> (angle &lt;= -<span class="n">8</span> &amp;&amp; angle &gt; -<span class="n">20</span>) {
+</span><span class="cl">      <span class="k">this</span>.dy = -<span class="n">8</span>;
+</span><span class="cl">    } <span class="k">else</span> <span class="k">if</span> (angle &gt;= -<span class="n">8</span> &amp;&amp; angle &lt; <span class="n">0</span>) {
+</span><span class="cl">      <span class="k">this</span>.dy = -<span class="n">5</span>;
+</span><span class="cl">    } <span class="k">else</span> <span class="k">if</span> (angle === <span class="n">0</span>) {
+</span><span class="cl">      <span class="k">this</span>.dy = <span class="n">0</span>;
+</span><span class="cl">    } <span class="k">else</span> <span class="k">if</span> (angle &gt; <span class="n">0</span> &amp;&amp; angle &lt;= <span class="n">8</span>) {
+</span><span class="cl">      <span class="k">this</span>.dy = <span class="n">5</span>;
+</span><span class="cl">    } <span class="k">else</span> <span class="k">if</span> (angle &gt; <span class="n">8</span> &amp;&amp; angle &lt;= <span class="n">20</span>) {
+</span><span class="cl">      <span class="k">this</span>.dy = <span class="n">8</span>;
+</span><span class="cl">    } <span class="k">else</span> <span class="k">if</span> (angle &gt; <span class="n">20</span>) {
+</span><span class="cl">      <span class="k">this</span>.dy = <span class="n">10</span>;
+</span><span class="cl">    }
+</span><span class="cl">  };
+</span><span class="cl"> 
+</span><span class="cl">  PongModel.prototype.tick = <span class="k">function</span> () {
+</span><span class="cl">    <span class="k">var</span> C = window.GameConstants;
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">if</span> (<span class="k">this</span>.gameOver) <span class="k">return</span>;
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">if</span> (<span class="k">this</span>.ballPause) {
+</span><span class="cl">      <span class="k">this</span>.pauseTicksRemaining--;
+</span><span class="cl">      <span class="k">if</span> (<span class="k">this</span>.pauseTicksRemaining &lt;= <span class="n">0</span>) <span class="k">this</span>.ballPause = <span class="k">false</span>;
+</span><span class="cl">      <span class="k">return</span>;
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">if</span> (<span class="k">this</span>.gameMode === <span class="s">&quot;cpu&quot;</span>) <span class="k">this</span>.cpuMovePaddle();
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">this</span>.ballX += <span class="k">this</span>.dx;
+</span><span class="cl">    <span class="k">this</span>.ballY += <span class="k">this</span>.dy;
+</span><span class="cl"> 
+</span><span class="cl">    <span class="c">/* top and bottom walls */</span>
+</span><span class="cl">    <span class="k">if</span> (<span class="k">this</span>.ballY &lt;= C.BORDER) {
+</span><span class="cl">      <span class="k">this</span>.ballY = C.BORDER;
+</span><span class="cl">      <span class="k">this</span>.dy = -<span class="k">this</span>.dy;
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">if</span> (<span class="k">this</span>.ballY + C.BALL_SIZE &gt;= <span class="k">this</span>.height - C.BORDER) {
+</span><span class="cl">      <span class="k">this</span>.ballY = <span class="k">this</span>.height - C.BORDER - C.BALL_SIZE;
+</span><span class="cl">      <span class="k">this</span>.dy = -<span class="k">this</span>.dy;
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">var</span> paddleX = (<span class="k">this</span>.gameMode === <span class="s">&quot;solo&quot;</span>)
+</span><span class="cl">      ? <span class="k">this</span>.width - C.BORDER - C.PADDLE_FILLER - C.PADDLE_WIDTH
+</span><span class="cl">      : C.BORDER + C.PADDLE_FILLER;
+</span><span class="cl"> 
+</span><span class="cl">    <span class="c">/* Overlap split into two axes on purpose — one combined condition was a</span>
+</span><span class="cl"><span class="c">       nightmare to debug. Same for the CPU paddle below. */</span>
+</span><span class="cl">    <span class="k">var</span> overlapsUpandDown = <span class="k">this</span>.ballY + C.BALL_SIZE &gt;= <span class="k">this</span>.paddleY &amp;&amp;
+</span><span class="cl">                            <span class="k">this</span>.ballY &lt;= <span class="k">this</span>.paddleY + C.PADDLE_HEIGHT;
+</span><span class="cl">    <span class="k">var</span> overlapsSidetoSide = <span class="k">this</span>.ballX + C.BALL_SIZE &gt;= paddleX &amp;&amp;
+</span><span class="cl">                             <span class="k">this</span>.ballX &lt;= paddleX + C.PADDLE_WIDTH;
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">if</span> (<span class="k">this</span>.gameMode === <span class="s">&quot;solo&quot;</span>) {
+</span><span class="cl">      <span class="k">if</span> (<span class="k">this</span>.ballX &lt;= C.BORDER) {          <span class="c">// left wall is the &quot;opponent&quot;</span>
+</span><span class="cl">        <span class="k">this</span>.ballX = C.BORDER;
+</span><span class="cl">        <span class="k">this</span>.dx = -<span class="k">this</span>.dx;
+</span><span class="cl">      }
+</span><span class="cl">      <span class="k">if</span> (<span class="k">this</span>.dx &gt; <span class="n">0</span> &amp;&amp; overlapsUpandDown &amp;&amp; overlapsSidetoSide) {
+</span><span class="cl">        <span class="k">this</span>.ballX = paddleX - C.BALL_SIZE;
+</span><span class="cl">        <span class="k">this</span>.dx = -<span class="k">this</span>.dx;
+</span><span class="cl">        <span class="k">this</span>.soloScore++;
+</span><span class="cl">        <span class="k">this</span>.bouncing(<span class="k">this</span>.paddleY);
+</span><span class="cl">      }
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">if</span> (<span class="k">this</span>.gameMode === <span class="s">&quot;cpu&quot;</span>) {
+</span><span class="cl">      <span class="k">if</span> (<span class="k">this</span>.dx &lt; <span class="n">0</span> &amp;&amp; overlapsUpandDown &amp;&amp; overlapsSidetoSide) {
+</span><span class="cl">        <span class="k">this</span>.ballX = paddleX + C.PADDLE_WIDTH;
+</span><span class="cl">        <span class="k">this</span>.dx = -<span class="k">this</span>.dx;
+</span><span class="cl">        <span class="k">this</span>.bouncing(<span class="k">this</span>.paddleY);
+</span><span class="cl">      }
+</span><span class="cl"> 
+</span><span class="cl">      <span class="k">var</span> cpuPaddleX = <span class="k">this</span>.width - C.BORDER - C.PADDLE_FILLER - C.PADDLE_WIDTH;
+</span><span class="cl">      <span class="k">var</span> cpuOverlapsUpandDown = <span class="k">this</span>.ballY + C.BALL_SIZE &gt;= <span class="k">this</span>.cpuPaddleY &amp;&amp;
+</span><span class="cl">                                 <span class="k">this</span>.ballY &lt;= <span class="k">this</span>.cpuPaddleY + C.PADDLE_HEIGHT;
+</span><span class="cl">      <span class="k">var</span> cpuOverlapsSidetoSide = <span class="k">this</span>.ballX + C.BALL_SIZE &gt;= cpuPaddleX &amp;&amp;
+</span><span class="cl">                                  <span class="k">this</span>.ballX &lt;= cpuPaddleX + C.PADDLE_WIDTH;
+</span><span class="cl"> 
+</span><span class="cl">      <span class="k">if</span> (<span class="k">this</span>.dx &gt; <span class="n">0</span> &amp;&amp; cpuOverlapsUpandDown &amp;&amp; cpuOverlapsSidetoSide) {
+</span><span class="cl">        <span class="k">this</span>.ballX = cpuPaddleX - C.BALL_SIZE;
+</span><span class="cl">        <span class="k">this</span>.dx = -<span class="k">this</span>.dx;
+</span><span class="cl">        <span class="k">this</span>.bouncing(<span class="k">this</span>.cpuPaddleY);
+</span><span class="cl">      }
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="c">/* scoring */</span>
+</span><span class="cl">    <span class="k">if</span> (<span class="k">this</span>.gameMode === <span class="s">&quot;solo&quot;</span>) {
+</span><span class="cl">      <span class="k">if</span> (<span class="k">this</span>.ballX + C.BALL_SIZE &gt;= <span class="k">this</span>.width - C.BORDER) {
+</span><span class="cl">        <span class="k">this</span>.soloMisses++;
+</span><span class="cl">        <span class="k">if</span> (<span class="k">this</span>.soloMisses &gt;= <span class="n">3</span>) <span class="k">this</span>.gameOver = <span class="k">true</span>;
+</span><span class="cl">        <span class="k">this</span>.resetBall();
+</span><span class="cl">        <span class="k">this</span>.pause();
+</span><span class="cl">      }
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">if</span> (<span class="k">this</span>.gameMode === <span class="s">&quot;cpu&quot;</span>) {
+</span><span class="cl">      <span class="k">if</span> (<span class="k">this</span>.ballX + C.BALL_SIZE &lt;= C.BORDER) {
+</span><span class="cl">        <span class="k">this</span>.cpuScore++;
+</span><span class="cl">        <span class="k">if</span> (<span class="k">this</span>.cpuScore &gt;= <span class="n">3</span>) <span class="k">this</span>.gameOver = <span class="k">true</span>;
+</span><span class="cl">        <span class="k">this</span>.resetBall();
+</span><span class="cl">        <span class="k">this</span>.pause();
+</span><span class="cl">        <span class="k">this</span>.dx = <span class="n">4</span>;
+</span><span class="cl">      }
+</span><span class="cl">      <span class="k">if</span> (<span class="k">this</span>.ballX + C.BALL_SIZE &gt;= <span class="k">this</span>.width - C.BORDER) {
+</span><span class="cl">        <span class="k">this</span>.humanScore++;
+</span><span class="cl">        <span class="k">if</span> (<span class="k">this</span>.humanScore &gt;= <span class="n">3</span>) <span class="k">this</span>.gameOver = <span class="k">true</span>;
+</span><span class="cl">        <span class="k">this</span>.resetBall();
+</span><span class="cl">        <span class="k">this</span>.pause();
+</span><span class="cl">        <span class="k">this</span>.dx = -<span class="n">4</span>;
+</span><span class="cl">      }
+</span><span class="cl">    }
+</span><span class="cl">  };
+</span><span class="cl"> 
+</span><span class="cl">  window.PongModel = PongModel;
+</span><span class="cl">})();
+</span></pre>
+</div>
+<div class="src-pane" id="p2" hidden data-path="games/pong/js/pong-panel.js" data-meta="168 LINES">
+<pre class="code"><span class="cl"><span class="c">/* ==========================================================================</span>
+</span><span class="cl"><span class="c">   pong-panel.js  —  port of PongPanel.java</span>
+</span><span class="cl"><span class="c">   Owns the canvas, the 16ms tick, the mouse wheel listener and every pixel</span>
+</span><span class="cl"><span class="c">   that gets drawn. Gameplay is untouched; only the palette changed (white on</span>
+</span><span class="cl"><span class="c">   black became neon green on black to match the rest of the arcade).</span>
+</span><span class="cl"><span class="c">   ========================================================================== */</span>
+</span><span class="cl">(<span class="k">function</span> () {
+</span><span class="cl">  <span class="s">&quot;use strict&quot;</span>;
+</span><span class="cl">  <span class="k">var</span> C = window.GameConstants;
+</span><span class="cl"> 
+</span><span class="cl">  <span class="k">function</span> PongPanel(canvas, gameMode, onGameOver) {
+</span><span class="cl">    <span class="k">this</span>.canvas = canvas;
+</span><span class="cl">    <span class="k">this</span>.ctx = canvas.getContext(<span class="s">&quot;2d&quot;</span>);
+</span><span class="cl">    <span class="k">this</span>.gameMode = gameMode;
+</span><span class="cl">    <span class="k">this</span>.onGameOver = onGameOver;
+</span><span class="cl">    <span class="k">this</span>.model = <span class="k">new</span> window.PongModel(C.WINDOW_WIDTH, C.WINDOW_HEIGHT, gameMode);
+</span><span class="cl">    <span class="k">this</span>.timer = <span class="k">null</span>;
+</span><span class="cl">    <span class="k">this</span>.reported = <span class="k">false</span>;
+</span><span class="cl"> 
+</span><span class="cl">    canvas.width = C.WINDOW_WIDTH;
+</span><span class="cl">    canvas.height = C.WINDOW_HEIGHT;
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">var</span> self = <span class="k">this</span>;
+</span><span class="cl"> 
+</span><span class="cl">    <span class="c">/* The Swing version used addMouseWheelListener; the browser equivalent is</span>
+</span><span class="cl"><span class="c">       the wheel event. preventDefault stops the page scrolling underneath. */</span>
+</span><span class="cl">    <span class="k">this</span>.onWheel = <span class="k">function</span> (e) {
+</span><span class="cl">      e.preventDefault();
+</span><span class="cl">      <span class="k">var</span> direction = e.deltaY &gt; <span class="n">0</span> ? <span class="n">1</span> : -<span class="n">1</span>;
+</span><span class="cl">      self.model.movePaddle(direction * C.SCROLL_AMOUNT);
+</span><span class="cl">      self.paintComponent();
+</span><span class="cl">    };
+</span><span class="cl">    canvas.addEventListener(<span class="s">&quot;wheel&quot;</span>, <span class="k">this</span>.onWheel, { passive: <span class="k">false</span> });
+</span><span class="cl">  }
+</span><span class="cl"> 
+</span><span class="cl">  PongPanel.prototype.start = <span class="k">function</span> () {
+</span><span class="cl">    <span class="k">var</span> self = <span class="k">this</span>;
+</span><span class="cl">    <span class="k">this</span>.stop();
+</span><span class="cl">    <span class="c">/* javax.swing.Timer(TIMER_DELAY, ...) — a fixed 16ms tick, not a</span>
+</span><span class="cl"><span class="c">       frame-rate-dependent loop, so pauseTicksRemaining still means &quot;one</span>
+</span><span class="cl"><span class="c">       second&quot; exactly as it did in Java. */</span>
+</span><span class="cl">    <span class="k">this</span>.timer = setInterval(<span class="k">function</span> () {
+</span><span class="cl">      self.model.tick();
+</span><span class="cl">      self.paintComponent();
+</span><span class="cl"> 
+</span><span class="cl">      <span class="k">if</span> (self.model.gameOver &amp;&amp; !self.reported) {
+</span><span class="cl">        self.reported = <span class="k">true</span>;
+</span><span class="cl">        self.stop();
+</span><span class="cl">        self.onGameOver(self.buildGameOverMessage());
+</span><span class="cl">      }
+</span><span class="cl">    }, C.TIMER_DELAY);
+</span><span class="cl">  };
+</span><span class="cl"> 
+</span><span class="cl">  PongPanel.prototype.stop = <span class="k">function</span> () {
+</span><span class="cl">    <span class="k">if</span> (<span class="k">this</span>.timer) clearInterval(<span class="k">this</span>.timer);
+</span><span class="cl">    <span class="k">this</span>.timer = <span class="k">null</span>;
+</span><span class="cl">  };
+</span><span class="cl"> 
+</span><span class="cl">  PongPanel.prototype.destroy = <span class="k">function</span> () {
+</span><span class="cl">    <span class="k">this</span>.stop();
+</span><span class="cl">    <span class="k">this</span>.canvas.removeEventListener(<span class="s">&quot;wheel&quot;</span>, <span class="k">this</span>.onWheel);
+</span><span class="cl">  };
+</span><span class="cl"> 
+</span><span class="cl">  PongPanel.prototype.resetGame = <span class="k">function</span> () {
+</span><span class="cl">    <span class="k">this</span>.model.resetGame();
+</span><span class="cl">    <span class="k">this</span>.reported = <span class="k">false</span>;
+</span><span class="cl">    <span class="k">this</span>.start();
+</span><span class="cl">  };
+</span><span class="cl"> 
+</span><span class="cl">  PongPanel.prototype.buildGameOverMessage = <span class="k">function</span> () {
+</span><span class="cl">    <span class="k">var</span> m = <span class="k">this</span>.model;
+</span><span class="cl">    <span class="k">if</span> (<span class="k">this</span>.gameMode === <span class="s">&quot;solo&quot;</span>) {
+</span><span class="cl">      <span class="k">return</span> {
+</span><span class="cl">        title: <span class="s">&quot;GAME OVER&quot;</span>,
+</span><span class="cl">        sub: <span class="s">&quot;Final score: &quot;</span> + m.soloScore + <span class="s">&quot; returns. Play again?&quot;</span>
+</span><span class="cl">      };
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">var</span> winner = m.humanScore &gt;= <span class="n">3</span> ? <span class="s">&quot;YOU WIN!&quot;</span> : <span class="s">&quot;CPU WINS!&quot;</span>;
+</span><span class="cl">    <span class="k">return</span> {
+</span><span class="cl">      title: winner,
+</span><span class="cl">      sub: <span class="s">&quot;Final score — you &quot;</span> + m.humanScore + <span class="s">&quot;, CPU &quot;</span> + m.cpuScore + <span class="s">&quot;. Play again?&quot;</span>
+</span><span class="cl">    };
+</span><span class="cl">  };
+</span><span class="cl"> 
+</span><span class="cl">  <span class="c">/* -------------------------------------------------------- paintComponent */</span>
+</span><span class="cl"> 
+</span><span class="cl">  PongPanel.prototype.paintComponent = <span class="k">function</span> () {
+</span><span class="cl">    <span class="k">var</span> g = <span class="k">this</span>.ctx;
+</span><span class="cl">    <span class="k">var</span> m = <span class="k">this</span>.model;
+</span><span class="cl">    <span class="k">var</span> w = C.WINDOW_WIDTH;
+</span><span class="cl">    <span class="k">var</span> h = C.WINDOW_HEIGHT;
+</span><span class="cl"> 
+</span><span class="cl">    g.fillStyle = <span class="s">&quot;#000000&quot;</span>;
+</span><span class="cl">    g.fillRect(<span class="n">0</span>, <span class="n">0</span>, w, h);
+</span><span class="cl"> 
+</span><span class="cl">    <span class="c">/* playfield border */</span>
+</span><span class="cl">    g.strokeStyle = <span class="s">&quot;#2c5c2a&quot;</span>;
+</span><span class="cl">    g.lineWidth = <span class="n">2</span>;
+</span><span class="cl">    g.strokeRect(C.BORDER + <span class="n">0.5</span>, C.BORDER + <span class="n">0.5</span>, w - <span class="n">2</span> * C.BORDER, h - <span class="n">2</span> * C.BORDER);
+</span><span class="cl"> 
+</span><span class="cl">    <span class="c">/* Centre net, cpu mode only.</span>
+</span><span class="cl"><span class="c">       In the Java original this was drawn at `centerX - DASH_WIDTH`, where</span>
+</span><span class="cl"><span class="c">       centerX was DASH_WIDTH / 2 — i.e. x = -1, off the left edge, so the net</span>
+</span><span class="cl"><span class="c">       never appeared. Drawn at the actual centre here; nothing else changed. */</span>
+</span><span class="cl">    <span class="k">if</span> (<span class="k">this</span>.gameMode === <span class="s">&quot;cpu&quot;</span>) {
+</span><span class="cl">      <span class="k">var</span> centerX = w / <span class="n">2</span> - C.DASH_WIDTH / <span class="n">2</span>;
+</span><span class="cl">      g.fillStyle = <span class="s">&quot;#2c5c2a&quot;</span>;
+</span><span class="cl">      <span class="k">for</span> (<span class="k">var</span> y = C.BORDER; y &lt; h - C.BORDER; y += C.DASH_GAP) {
+</span><span class="cl">        g.fillRect(centerX, y, C.DASH_WIDTH, C.DASH_HEIGHT);
+</span><span class="cl">      }
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="c">/* ball */</span>
+</span><span class="cl">    g.fillStyle = <span class="s">&quot;#b7ff9f&quot;</span>;
+</span><span class="cl">    g.shadowColor = <span class="s">&quot;rgba(124, 255, 107, 0.9)&quot;</span>;
+</span><span class="cl">    g.shadowBlur = <span class="n">18</span>;
+</span><span class="cl">    g.beginPath();
+</span><span class="cl">    g.arc(
+</span><span class="cl">      m.ballX + C.BALL_SIZE / <span class="n">2</span>,
+</span><span class="cl">      m.ballY + C.BALL_SIZE / <span class="n">2</span>,
+</span><span class="cl">      C.BALL_SIZE / <span class="n">2</span>, <span class="n">0</span>, Math.PI * <span class="n">2</span>
+</span><span class="cl">    );
+</span><span class="cl">    g.fill();
+</span><span class="cl"> 
+</span><span class="cl">    <span class="c">/* paddles */</span>
+</span><span class="cl">    g.fillStyle = <span class="s">&quot;#7cff6b&quot;</span>;
+</span><span class="cl">    <span class="k">var</span> paddleX;
+</span><span class="cl">    <span class="k">if</span> (<span class="k">this</span>.gameMode === <span class="s">&quot;solo&quot;</span>) {
+</span><span class="cl">      paddleX = w - C.BORDER - C.PADDLE_FILLER - C.PADDLE_WIDTH;
+</span><span class="cl">      g.fillRect(paddleX, m.paddleY, C.PADDLE_WIDTH, C.PADDLE_HEIGHT);
+</span><span class="cl">    } <span class="k">else</span> {
+</span><span class="cl">      paddleX = C.BORDER + C.PADDLE_FILLER;
+</span><span class="cl">      <span class="k">var</span> cpuPaddleX = w - C.BORDER - C.PADDLE_FILLER - C.PADDLE_WIDTH;
+</span><span class="cl">      g.fillRect(paddleX, m.paddleY, C.PADDLE_WIDTH, C.PADDLE_HEIGHT);
+</span><span class="cl">      g.fillStyle = <span class="s">&quot;#ff63c8&quot;</span>;
+</span><span class="cl">      g.shadowColor = <span class="s">&quot;rgba(255, 99, 200, 0.9)&quot;</span>;
+</span><span class="cl">      g.fillRect(cpuPaddleX, m.cpuPaddleY, C.PADDLE_WIDTH, C.PADDLE_HEIGHT);
+</span><span class="cl">    }
+</span><span class="cl">    g.shadowBlur = <span class="n">0</span>;
+</span><span class="cl"> 
+</span><span class="cl">    <span class="c">/* score readout */</span>
+</span><span class="cl">    g.font = <span class="s">&quot;12px &#x27;Press Start 2P&#x27;, monospace&quot;</span>;
+</span><span class="cl">    g.textBaseline = <span class="s">&quot;alphabetic&quot;</span>;
+</span><span class="cl">    <span class="k">if</span> (<span class="k">this</span>.gameMode === <span class="s">&quot;solo&quot;</span>) {
+</span><span class="cl">      g.fillStyle = <span class="s">&quot;#7cff6b&quot;</span>;
+</span><span class="cl">      g.fillText(<span class="s">&quot;SCORE &quot;</span> + m.soloScore, C.SOLO_SCORE_X, C.SCORE_Y);
+</span><span class="cl">      g.fillStyle = <span class="s">&quot;#ff63c8&quot;</span>;
+</span><span class="cl">      g.fillText(<span class="s">&quot;MISSES &quot;</span> + m.soloMisses, C.SOLO_MISSES_X + <span class="n">40</span>, C.SCORE_Y);
+</span><span class="cl">    } <span class="k">else</span> {
+</span><span class="cl">      g.fillStyle = <span class="s">&quot;#7cff6b&quot;</span>;
+</span><span class="cl">      g.fillText(<span class="s">&quot;YOU &quot;</span> + m.humanScore, C.SOLO_SCORE_X, C.SCORE_Y);
+</span><span class="cl">      g.fillStyle = <span class="s">&quot;#ff63c8&quot;</span>;
+</span><span class="cl">      g.fillText(<span class="s">&quot;CPU &quot;</span> + m.cpuScore, w - C.BORDER - C.CPU_SCORE_OFFSET, C.SCORE_Y);
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="c">/* &quot;get ready&quot; beat between points */</span>
+</span><span class="cl">    <span class="k">if</span> (m.ballPause &amp;&amp; !m.gameOver) {
+</span><span class="cl">      g.fillStyle = <span class="s">&quot;rgba(183, 255, 159, 0.85)&quot;</span>;
+</span><span class="cl">      g.font = <span class="s">&quot;14px &#x27;Press Start 2P&#x27;, monospace&quot;</span>;
+</span><span class="cl">      g.textAlign = <span class="s">&quot;center&quot;</span>;
+</span><span class="cl">      g.fillText(<span class="s">&quot;READY...&quot;</span>, w / <span class="n">2</span>, h / <span class="n">2</span> - <span class="n">40</span>);
+</span><span class="cl">      g.textAlign = <span class="s">&quot;left&quot;</span>;
+</span><span class="cl">    }
+</span><span class="cl">  };
+</span><span class="cl"> 
+</span><span class="cl">  window.PongPanel = PongPanel;
+</span><span class="cl">})();
+</span></pre>
+</div>
+<div class="src-pane" id="p3" hidden data-path="games/pong/js/main.js" data-meta="97 LINES">
+<pre class="code"><span class="cl"><span class="c">/* ==========================================================================</span>
+</span><span class="cl"><span class="c">   main.js  —  port of PongLauncher.java</span>
+</span><span class="cl"><span class="c">   The launcher validated one argument, solo or cpu, and refused to start</span>
+</span><span class="cl"><span class="c">   without it. Same idea, except the argument is a button on an attract screen</span>
+</span><span class="cl"><span class="c">   instead of something you type after `java PongLauncher`.</span>
+</span><span class="cl"><span class="c">   ========================================================================== */</span>
+</span><span class="cl">(<span class="k">function</span> () {
+</span><span class="cl">  <span class="s">&quot;use strict&quot;</span>;
+</span><span class="cl"> 
+</span><span class="cl">  <span class="k">var</span> canvas = document.getElementById(<span class="s">&quot;pong&quot;</span>);
+</span><span class="cl">  <span class="k">var</span> attract = document.getElementById(<span class="s">&quot;attract&quot;</span>);
+</span><span class="cl">  <span class="k">var</span> hint = document.getElementById(<span class="s">&quot;hint&quot;</span>);
+</span><span class="cl">  <span class="k">var</span> modeBtns = Array.prototype.slice.call(document.querySelectorAll(<span class="s">&quot;[data-pong-mode]&quot;</span>));
+</span><span class="cl">  <span class="k">var</span> quitBtn = document.getElementById(<span class="s">&quot;quitBtn&quot;</span>);
+</span><span class="cl"> 
+</span><span class="cl">  <span class="k">var</span> modal = document.getElementById(<span class="s">&quot;gameOverModal&quot;</span>);
+</span><span class="cl">  <span class="k">var</span> modalTitle = document.getElementById(<span class="s">&quot;gameOverTitle&quot;</span>);
+</span><span class="cl">  <span class="k">var</span> modalSub = document.getElementById(<span class="s">&quot;gameOverSubtitle&quot;</span>);
+</span><span class="cl">  <span class="k">var</span> playAgainBtn = document.getElementById(<span class="s">&quot;playAgainBtn&quot;</span>);
+</span><span class="cl"> 
+</span><span class="cl">  <span class="k">var</span> panel = <span class="k">null</span>;
+</span><span class="cl"> 
+</span><span class="cl">  <span class="k">var</span> HINTS = {
+</span><span class="cl">    solo: <span class="s">&quot;Scroll the wheel over the board to move your paddle. Keep the ball alive — three misses and it&#x27;s over.&quot;</span>,
+</span><span class="cl">    cpu:  <span class="s">&quot;Scroll the wheel over the board to move the green paddle. First to three points wins.&quot;</span>
+</span><span class="cl">  };
+</span><span class="cl"> 
+</span><span class="cl">  <span class="k">function</span> launch(mode) {
+</span><span class="cl">    <span class="k">if</span> (panel) panel.destroy();
+</span><span class="cl"> 
+</span><span class="cl">    <span class="c">// Usage check, straight from the launcher: nothing but solo or cpu.</span>
+</span><span class="cl">    <span class="k">if</span> (mode !== <span class="s">&quot;solo&quot;</span> &amp;&amp; mode !== <span class="s">&quot;cpu&quot;</span>) {
+</span><span class="cl">      console.error(<span class="s">&quot;Usage: PongPanel &lt;solo|cpu&gt;&quot;</span>);
+</span><span class="cl">      <span class="k">return</span>;
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    panel = <span class="k">new</span> window.PongPanel(canvas, mode, showGameOver);
+</span><span class="cl">    panel.start();
+</span><span class="cl"> 
+</span><span class="cl">    attract.hidden = <span class="k">true</span>;
+</span><span class="cl">    canvas.hidden = <span class="k">false</span>;
+</span><span class="cl">    hint.textContent = HINTS[mode];
+</span><span class="cl"> 
+</span><span class="cl">    modeBtns.forEach(<span class="k">function</span> (b) {
+</span><span class="cl">      b.classList.toggle(<span class="s">&quot;is-active&quot;</span>, b.getAttribute(<span class="s">&quot;data-pong-mode&quot;</span>) === mode);
+</span><span class="cl">    });
+</span><span class="cl"> 
+</span><span class="cl">    <span class="c">// Bring the playfield fully into view. Starting the game from the attract</span>
+</span><span class="cl">    <span class="c">// screen used to leave the bottom of the board under the fold, and you</span>
+</span><span class="cl">    <span class="c">// can&#x27;t scroll the page while the wheel is busy driving the paddle.</span>
+</span><span class="cl">    <span class="k">var</span> cabinet = document.querySelector(<span class="s">&quot;[data-center]&quot;</span>);
+</span><span class="cl">    <span class="k">if</span> (cabinet &amp;&amp; cabinet.scrollIntoView) {
+</span><span class="cl">      cabinet.scrollIntoView({ behavior: <span class="s">&quot;smooth&quot;</span>, block: <span class="s">&quot;center&quot;</span> });
+</span><span class="cl">    }
+</span><span class="cl">  }
+</span><span class="cl"> 
+</span><span class="cl">  <span class="k">function</span> showGameOver(message) {
+</span><span class="cl">    modalTitle.textContent = message.title;
+</span><span class="cl">    modalSub.textContent = message.sub;
+</span><span class="cl">    modal.hidden = <span class="k">false</span>;
+</span><span class="cl">    playAgainBtn.focus();
+</span><span class="cl">  }
+</span><span class="cl"> 
+</span><span class="cl">  <span class="c">/* JOptionPane&#x27;s YES branch called model.resetGame(); the NO branch called</span>
+</span><span class="cl"><span class="c">     System.exit(0). On a web page, &quot;quit&quot; means going back to the arcade. */</span>
+</span><span class="cl">  playAgainBtn.addEventListener(<span class="s">&quot;click&quot;</span>, <span class="k">function</span> () {
+</span><span class="cl">    modal.hidden = <span class="k">true</span>;
+</span><span class="cl">    <span class="k">if</span> (panel) panel.resetGame();
+</span><span class="cl">  });
+</span><span class="cl"> 
+</span><span class="cl">  quitBtn.addEventListener(<span class="s">&quot;click&quot;</span>, <span class="k">function</span> () {
+</span><span class="cl">    window.location.href = <span class="s">&quot;../../index.html&quot;</span>;
+</span><span class="cl">  });
+</span><span class="cl"> 
+</span><span class="cl">  modeBtns.forEach(<span class="k">function</span> (b) {
+</span><span class="cl">    b.addEventListener(<span class="s">&quot;click&quot;</span>, <span class="k">function</span> () {
+</span><span class="cl">      modal.hidden = <span class="k">true</span>;
+</span><span class="cl">      launch(b.getAttribute(<span class="s">&quot;data-pong-mode&quot;</span>));
+</span><span class="cl">    });
+</span><span class="cl">  });
+</span><span class="cl"> 
+</span><span class="cl">  document.addEventListener(<span class="s">&quot;keydown&quot;</span>, <span class="k">function</span> (e) {
+</span><span class="cl">    <span class="k">if</span> (e.key === <span class="s">&quot;Escape&quot;</span> &amp;&amp; !modal.hidden) modal.hidden = <span class="k">true</span>;
+</span><span class="cl">  });
+</span><span class="cl"> 
+</span><span class="cl">  <span class="c">/* Pause the tick while the tab is hidden so the ball isn&#x27;t 40 seconds ahead</span>
+</span><span class="cl"><span class="c">     when you come back. */</span>
+</span><span class="cl">  document.addEventListener(<span class="s">&quot;visibilitychange&quot;</span>, <span class="k">function</span> () {
+</span><span class="cl">    <span class="k">if</span> (!panel) <span class="k">return</span>;
+</span><span class="cl">    <span class="k">if</span> (document.hidden) {
+</span><span class="cl">      panel.stop();
+</span><span class="cl">    } <span class="k">else</span> <span class="k">if</span> (!panel.model.gameOver &amp;&amp; modal.hidden) {
+</span><span class="cl">      panel.start();
+</span><span class="cl">    }
+</span><span class="cl">  });
+</span><span class="cl">})();
+</span></pre>
+</div>
+<div class="src-pane" id="p4" hidden data-path="games/pong/index.html" data-meta="88 LINES">
+<pre class="code"><span class="cl">&lt;!DOCTYPE html&gt;
+</span><span class="cl">&lt;html lang=&quot;en&quot;&gt;
+</span><span class="cl">&lt;head&gt;
+</span><span class="cl">&lt;meta charset=&quot;UTF-8&quot; /&gt;
+</span><span class="cl">&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot; /&gt;
+</span><span class="cl">&lt;title&gt;PONG — The Arcade&lt;/title&gt;
+</span><span class="cl">&lt;link rel=&quot;icon&quot; href=&quot;../../assets/favicon.svg&quot; type=&quot;image/svg+xml&quot; /&gt;
+</span><span class="cl">&lt;link rel=&quot;preconnect&quot; href=&quot;https://fonts.googleapis.com&quot; /&gt;
+</span><span class="cl">&lt;link rel=&quot;preconnect&quot; href=&quot;https://fonts.gstatic.com&quot; crossorigin /&gt;
+</span><span class="cl">&lt;link href=&quot;https://fonts.googleapis.com/css2?family=Press+Start+2P&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap&quot; rel=&quot;stylesheet&quot; /&gt;
+</span><span class="cl">&lt;link rel=&quot;stylesheet&quot; href=&quot;../../css/arcade.css&quot; /&gt;
+</span><span class="cl">&lt;link rel=&quot;stylesheet&quot; href=&quot;style.css&quot; /&gt;
+</span><span class="cl">&lt;/head&gt;
+</span><span class="cl">&lt;body&gt;
+</span><span class="cl"> 
+</span><span class="cl">&lt;canvas id=&quot;bg-invaders&quot; aria-hidden=&quot;true&quot;&gt;&lt;/canvas&gt;
+</span><span class="cl">&lt;div class=&quot;bg-grid&quot; aria-hidden=&quot;true&quot;&gt;&lt;/div&gt;
+</span><span class="cl">&lt;div class=&quot;bg-vignette&quot; aria-hidden=&quot;true&quot;&gt;&lt;/div&gt;
+</span><span class="cl">&lt;div class=&quot;bg-scanlines&quot; aria-hidden=&quot;true&quot;&gt;&lt;/div&gt;
+</span><span class="cl"> 
+</span><span class="cl">&lt;div class=&quot;wrap&quot;&gt;
+</span><span class="cl"> 
+</span><span class="cl">  &lt;div class=&quot;shell-bar&quot;&gt;
+</span><span class="cl">    &lt;div&gt;
+</span><span class="cl">      &lt;h1 class=&quot;shell-title&quot;&gt;PONG&lt;/h1&gt;
+</span><span class="cl">      &lt;p class=&quot;shell-sub&quot;&gt;Ported from Java Swing · Mouse wheel controls the paddle&lt;/p&gt;
+</span><span class="cl">    &lt;/div&gt;
+</span><span class="cl">    &lt;a class=&quot;btn btn-pink&quot; href=&quot;../../index.html&quot;&gt;◀ ARCADE&lt;/a&gt;
+</span><span class="cl">  &lt;/div&gt;
+</span><span class="cl"> 
+</span><span class="cl">  &lt;div class=&quot;cabinet&quot; data-center&gt;
+</span><span class="cl"> 
+</span><span class="cl">    &lt;div class=&quot;hud&quot;&gt;
+</span><span class="cl">      &lt;span class=&quot;hud-label&quot;&gt;MODE:&lt;/span&gt;
+</span><span class="cl">      &lt;button class=&quot;btn&quot; type=&quot;button&quot; data-pong-mode=&quot;solo&quot;&gt;SOLO&lt;/button&gt;
+</span><span class="cl">      &lt;button class=&quot;btn&quot; type=&quot;button&quot; data-pong-mode=&quot;cpu&quot;&gt;VS CPU&lt;/button&gt;
+</span><span class="cl">    &lt;/div&gt;
+</span><span class="cl"> 
+</span><span class="cl">    &lt;div class=&quot;cabinet-screen&quot;&gt;
+</span><span class="cl">      &lt;div class=&quot;pong-stage&quot;&gt;
+</span><span class="cl">        &lt;div class=&quot;attract&quot; id=&quot;attract&quot;&gt;
+</span><span class="cl">          &lt;h2&gt;PONG&lt;/h2&gt;
+</span><span class="cl">          &lt;p&gt;
+</span><span class="cl">            SOLO — KEEP IT ALIVE, 3 MISSES AND OUT&lt;br /&gt;
+</span><span class="cl">            VS CPU — FIRST TO 3 POINTS
+</span><span class="cl">          &lt;/p&gt;
+</span><span class="cl">          &lt;div class=&quot;attract-modes&quot;&gt;
+</span><span class="cl">            &lt;button class=&quot;btn&quot; type=&quot;button&quot; data-pong-mode=&quot;solo&quot;&gt;▶ SOLO&lt;/button&gt;
+</span><span class="cl">            &lt;button class=&quot;btn&quot; type=&quot;button&quot; data-pong-mode=&quot;cpu&quot;&gt;▶ VS CPU&lt;/button&gt;
+</span><span class="cl">          &lt;/div&gt;
+</span><span class="cl">          &lt;p style=&quot;color:#2f5a2c;&quot;&gt;SELECT A MODE TO START &lt;span class=&quot;blink&quot;&gt;_&lt;/span&gt;&lt;/p&gt;
+</span><span class="cl">        &lt;/div&gt;
+</span><span class="cl">        &lt;canvas id=&quot;pong&quot; hidden aria-label=&quot;Pong playfield&quot;&gt;&lt;/canvas&gt;
+</span><span class="cl">      &lt;/div&gt;
+</span><span class="cl">    &lt;/div&gt;
+</span><span class="cl"> 
+</span><span class="cl">    &lt;p class=&quot;pong-hint&quot; id=&quot;hint&quot;&gt;
+</span><span class="cl">      Pick a mode above. Where the ball strikes your paddle sets the angle it
+</span><span class="cl">      leaves at — clip the top or bottom edge and it flies off steeply, hit dead
+</span><span class="cl">      centre and it comes straight back.
+</span><span class="cl">    &lt;/p&gt;
+</span><span class="cl">  &lt;/div&gt;
+</span><span class="cl">&lt;/div&gt;
+</span><span class="cl"> 
+</span><span class="cl">&lt;footer class=&quot;arcade-footer&quot;&gt;
+</span><span class="cl">  &lt;p&gt;&lt;a href=&quot;../../index.html&quot;&gt;◀ BACK TO THE ARCADE&lt;/a&gt;&lt;/p&gt;
+</span><span class="cl">&lt;/footer&gt;
+</span><span class="cl"> 
+</span><span class="cl">&lt;div class=&quot;arcade-modal&quot; id=&quot;gameOverModal&quot; hidden&gt;
+</span><span class="cl">  &lt;div class=&quot;arcade-modal-box&quot;&gt;
+</span><span class="cl">    &lt;p class=&quot;arcade-modal-title&quot; id=&quot;gameOverTitle&quot;&gt;GAME OVER&lt;/p&gt;
+</span><span class="cl">    &lt;p class=&quot;arcade-modal-sub&quot; id=&quot;gameOverSubtitle&quot;&gt;&lt;/p&gt;
+</span><span class="cl">    &lt;div class=&quot;arcade-modal-actions&quot;&gt;
+</span><span class="cl">      &lt;button class=&quot;btn&quot; type=&quot;button&quot; id=&quot;playAgainBtn&quot;&gt;PLAY AGAIN&lt;/button&gt;
+</span><span class="cl">      &lt;button class=&quot;btn btn-pink&quot; type=&quot;button&quot; id=&quot;quitBtn&quot;&gt;QUIT&lt;/button&gt;
+</span><span class="cl">    &lt;/div&gt;
+</span><span class="cl">  &lt;/div&gt;
+</span><span class="cl">&lt;/div&gt;
+</span><span class="cl"> 
+</span><span class="cl">&lt;script src=&quot;../../js/invaders-bg.js&quot;&gt;&lt;/script&gt;
+</span><span class="cl">&lt;script src=&quot;../../js/center-game.js&quot;&gt;&lt;/script&gt;
+</span><span class="cl">&lt;script src=&quot;js/game-constants.js&quot;&gt;&lt;/script&gt;
+</span><span class="cl">&lt;script src=&quot;js/pong-model.js&quot;&gt;&lt;/script&gt;
+</span><span class="cl">&lt;script src=&quot;js/pong-panel.js&quot;&gt;&lt;/script&gt;
+</span><span class="cl">&lt;script src=&quot;js/main.js&quot;&gt;&lt;/script&gt;
+</span><span class="cl">&lt;/body&gt;
+</span><span class="cl">&lt;/html&gt;
+</span></pre>
+</div>
+<div class="src-pane" id="p5" hidden data-path="games/pong/style.css" data-meta="89 LINES">
+<pre class="code"><span class="cl"><span class="c">/* Pong. Shared chrome comes from ../../css/arcade.css */</span>
+</span><span class="cl"> 
+</span><span class="cl">.pong-stage {
+</span><span class="cl">  position: relative;
+</span><span class="cl">  display: flex;
+</span><span class="cl">  align-items: center;
+</span><span class="cl">  justify-content: center;
+</span><span class="cl">  min-height: <span class="n">300px</span>;
+</span><span class="cl">  scroll-margin-top: <span class="n">16px</span>;
+</span><span class="cl">}
+</span><span class="cl"> 
+</span><span class="cl"><span class="c">/* 700x500 — the size of the Java window — backing off only as far as it must</span>
+</span><span class="cl"><span class="c">   to keep the whole cabinet, borders included, on a short screen. 260px is</span>
+</span><span class="cl"><span class="c">   what the chrome above and below the playfield costs, and the x1.4 converts</span>
+</span><span class="cl"><span class="c">   the height that leaves into a width at the board&#x27;s 700:500 ratio. Above</span>
+</span><span class="cl"><span class="c">   about 620px of window height it stays the full 700. */</span>
+</span><span class="cl">#pong,
+</span><span class="cl">.attract {
+</span><span class="cl">  width: min(<span class="n">700px</span>, <span class="n">100</span>%, calc((<span class="n">100vh</span> - <span class="n">260px</span>) * <span class="n">1.4</span>));
+</span><span class="cl">}
+</span><span class="cl"> 
+</span><span class="cl">#pong {
+</span><span class="cl">  display: block;
+</span><span class="cl">  height: auto;
+</span><span class="cl">  aspect-ratio: <span class="n">700</span> / <span class="n">500</span>;
+</span><span class="cl">  background: #<span class="n">000</span>;
+</span><span class="cl">  border: <span class="n">2px</span> solid #<span class="n">16301c</span>;
+</span><span class="cl">  box-shadow: <span class="n">0</span> <span class="n">0</span> <span class="n">34px</span> rgba(<span class="n">124</span>, <span class="n">255</span>, <span class="n">107</span>, <span class="n">0.14</span>);
+</span><span class="cl">  touch-action: none;
+</span><span class="cl">}
+</span><span class="cl"> 
+</span><span class="cl"><span class="c">/* `hidden` has to beat the `display: block` above, which is a stronger</span>
+</span><span class="cl"><span class="c">   selector — without this the canvas stayed on screen as an empty second box</span>
+</span><span class="cl"><span class="c">   beside the attract screen. */</span>
+</span><span class="cl">#pong[hidden] {
+</span><span class="cl">  display: none !important;
+</span><span class="cl">}
+</span><span class="cl"> 
+</span><span class="cl"><span class="c">/* ------------------------------------------------------------ attract mode */</span>
+</span><span class="cl"> 
+</span><span class="cl">.attract {
+</span><span class="cl">  aspect-ratio: <span class="n">700</span> / <span class="n">500</span>;
+</span><span class="cl">  background: #<span class="n">000</span>;
+</span><span class="cl">  border: <span class="n">2px</span> solid #<span class="n">16301c</span>;
+</span><span class="cl">  display: flex;
+</span><span class="cl">  flex-direction: column;
+</span><span class="cl">  align-items: center;
+</span><span class="cl">  justify-content: center;
+</span><span class="cl">  gap: <span class="n">22px</span>;
+</span><span class="cl">  text-align: center;
+</span><span class="cl">  padding: <span class="n">20px</span>;
+</span><span class="cl">}
+</span><span class="cl"> 
+</span><span class="cl">.attract[hidden] { display: none; }
+</span><span class="cl"> 
+</span><span class="cl">.attract h2 {
+</span><span class="cl">  font-family: <span class="k">var</span>(--pixel);
+</span><span class="cl">  font-size: clamp(<span class="n">22px</span>, <span class="n">6vw</span>, <span class="n">46px</span>);
+</span><span class="cl">  color: <span class="k">var</span>(--neon);
+</span><span class="cl">  margin: <span class="n">0</span>;
+</span><span class="cl">  letter-spacing: <span class="n">0.12em</span>;
+</span><span class="cl">  text-shadow: <span class="n">0</span> <span class="n">0</span> <span class="n">16px</span> <span class="k">var</span>(--neon-glow), <span class="n">4px</span> <span class="n">4px</span> <span class="n">0</span> #<span class="n">0d3a09</span>;
+</span><span class="cl">}
+</span><span class="cl"> 
+</span><span class="cl">.attract p {
+</span><span class="cl">  font-family: <span class="k">var</span>(--pixel);
+</span><span class="cl">  font-size: <span class="n">9px</span>;
+</span><span class="cl">  color: <span class="k">var</span>(--ink-soft);
+</span><span class="cl">  margin: <span class="n">0</span>;
+</span><span class="cl">  line-height: <span class="n">2</span>;
+</span><span class="cl">  letter-spacing: <span class="n">0.06em</span>;
+</span><span class="cl">}
+</span><span class="cl"> 
+</span><span class="cl">.attract-modes {
+</span><span class="cl">  display: flex;
+</span><span class="cl">  gap: <span class="n">12px</span>;
+</span><span class="cl">  flex-wrap: wrap;
+</span><span class="cl">  justify-content: center;
+</span><span class="cl">}
+</span><span class="cl"> 
+</span><span class="cl">.pong-hint {
+</span><span class="cl">  font-size: <span class="n">12.5px</span>;
+</span><span class="cl">  color: <span class="k">var</span>(--ink-soft);
+</span><span class="cl">  text-align: center;
+</span><span class="cl">  margin: <span class="n">18px</span> auto <span class="n">0</span>;
+</span><span class="cl">  max-width: <span class="n">540px</span>;
+</span><span class="cl">  line-height: <span class="n">1.8</span>;
+</span><span class="cl">}
+</span></pre>
+</div>
+<div class="src-pane" id="p6" hidden data-path="java-source/pong/GameConstants.java" data-meta="20 LINES">
+<pre class="code"><span class="cl"><span class="k">public</span> <span class="k">class</span> GameConstants {
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">public</span> <span class="k">static</span> <span class="k">final</span> <span class="k">int</span> WINDOW_WIDTH = <span class="n">700</span>;
+</span><span class="cl">    <span class="k">public</span> <span class="k">static</span> <span class="k">final</span> <span class="k">int</span> WINDOW_HEIGHT = <span class="n">500</span>;
+</span><span class="cl">    <span class="k">public</span> <span class="k">static</span> <span class="k">final</span> <span class="k">int</span> BORDER = <span class="n">30</span>;
+</span><span class="cl">    <span class="k">public</span> <span class="k">static</span> <span class="k">final</span> <span class="k">int</span> BALL_SIZE = <span class="n">14</span>;
+</span><span class="cl">    <span class="k">public</span> <span class="k">static</span> <span class="k">final</span> <span class="k">int</span> TIMER_DELAY = <span class="n">16</span>;
+</span><span class="cl">    <span class="k">public</span> <span class="k">static</span> <span class="k">final</span> <span class="k">int</span> PADDLE_WIDTH = <span class="n">12</span>;
+</span><span class="cl">    <span class="k">public</span> <span class="k">static</span> <span class="k">final</span> <span class="k">int</span> PADDLE_HEIGHT = <span class="n">70</span>;
+</span><span class="cl">    <span class="k">public</span> <span class="k">static</span> <span class="k">final</span> <span class="k">int</span> PADDLE_FILLER = <span class="n">10</span>;
+</span><span class="cl">    <span class="k">public</span> <span class="k">static</span> <span class="k">final</span> <span class="k">int</span> SCROLL_AMOUNT = <span class="n">15</span>;
+</span><span class="cl">    <span class="k">public</span> <span class="k">static</span> <span class="k">final</span> <span class="k">int</span> DASH_GAP = <span class="n">20</span>;
+</span><span class="cl">    <span class="k">public</span> <span class="k">static</span> <span class="k">final</span> <span class="k">int</span> DASH_HEIGHT = <span class="n">10</span>;
+</span><span class="cl">    <span class="k">public</span> <span class="k">static</span> <span class="k">final</span> <span class="k">int</span> DASH_WIDTH = <span class="n">2</span>;
+</span><span class="cl">    <span class="k">public</span> <span class="k">static</span> <span class="k">final</span> <span class="k">int</span> SOLO_SCORE_X = BORDER + <span class="n">20</span>;
+</span><span class="cl">    <span class="k">public</span> <span class="k">static</span> <span class="k">final</span> <span class="k">int</span> SOLO_MISSES_X = BORDER + <span class="n">120</span>;
+</span><span class="cl">    <span class="k">public</span> <span class="k">static</span> <span class="k">final</span> <span class="k">int</span> SCORE_Y = <span class="n">20</span>;
+</span><span class="cl">    <span class="k">public</span> <span class="k">static</span> <span class="k">final</span> <span class="k">int</span> CPU_SCORE_OFFSET = <span class="n">100</span>;
+</span><span class="cl">}
+</span></pre>
+</div>
+<div class="src-pane" id="p7" hidden data-path="java-source/pong/PongModel.java" data-meta="212 LINES">
+<pre class="code"><span class="cl"><span class="k">public</span> <span class="k">class</span> PongModel {
+</span><span class="cl">    <span class="k">int</span> ballX;
+</span><span class="cl">    <span class="k">int</span> ballY;
+</span><span class="cl">    <span class="k">int</span> dx = <span class="n">4</span>;
+</span><span class="cl">    <span class="k">int</span> dy = <span class="n">4</span>;
+</span><span class="cl">    <span class="k">int</span> width;
+</span><span class="cl">    <span class="k">int</span> height;
+</span><span class="cl">    <span class="k">int</span> paddleY;
+</span><span class="cl">    String gameMode;
+</span><span class="cl">    <span class="k">int</span> soloScore;
+</span><span class="cl">    <span class="k">int</span> soloMisses;
+</span><span class="cl">    <span class="k">boolean</span> gameOver;
+</span><span class="cl">    <span class="k">boolean</span> ballPause;
+</span><span class="cl">    <span class="k">int</span> pauseTicksRemaining;
+</span><span class="cl">    <span class="k">int</span> cpuPaddleY;
+</span><span class="cl">    <span class="k">int</span> humanScore;
+</span><span class="cl">    <span class="k">int</span> cpuScore;
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">public</span> PongModel(<span class="k">int</span> width, <span class="k">int</span> height, String gameMode) {
+</span><span class="cl">        <span class="k">this</span>.width = width;
+</span><span class="cl">        <span class="k">this</span>.height = height;
+</span><span class="cl">        <span class="k">this</span>.gameMode = gameMode;
+</span><span class="cl">        resetBall();
+</span><span class="cl">        resetPaddle();
+</span><span class="cl">        soloScore = <span class="n">0</span>;
+</span><span class="cl">        soloMisses = <span class="n">0</span>;
+</span><span class="cl">        humanScore = <span class="n">0</span>;
+</span><span class="cl">        cpuScore = <span class="n">0</span>;
+</span><span class="cl">        gameOver = <span class="k">false</span>;
+</span><span class="cl">        ballPause = <span class="k">false</span>;
+</span><span class="cl">        pauseTicksRemaining = <span class="n">0</span>;
+</span><span class="cl">        cpuPaddleY = height / <span class="n">2</span> - GameConstants.PADDLE_HEIGHT / <span class="n">2</span>;
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">public</span> <span class="k">void</span> resetGame() {
+</span><span class="cl">        soloScore = <span class="n">0</span>;
+</span><span class="cl">        soloMisses = <span class="n">0</span>;
+</span><span class="cl">        humanScore = <span class="n">0</span>;
+</span><span class="cl">        cpuScore = <span class="n">0</span>;
+</span><span class="cl">        gameOver = <span class="k">false</span>;
+</span><span class="cl">        dx = <span class="n">4</span>;
+</span><span class="cl">        dy = <span class="n">4</span>;
+</span><span class="cl">        resetPaddle();
+</span><span class="cl">        resetBall();
+</span><span class="cl">        ballPause = <span class="k">false</span>;
+</span><span class="cl">        pauseTicksRemaining = <span class="n">0</span>;
+</span><span class="cl">        cpuPaddleY = height / <span class="n">2</span> - GameConstants.PADDLE_HEIGHT / <span class="n">2</span>;
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">public</span> <span class="k">void</span> pause() {
+</span><span class="cl">        ballPause = <span class="k">true</span>;
+</span><span class="cl">        pauseTicksRemaining = <span class="n">60</span>;
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">public</span> <span class="k">void</span> resetBall() {
+</span><span class="cl">        ballX = width / <span class="n">2</span> - GameConstants.BALL_SIZE / <span class="n">2</span>;
+</span><span class="cl">        ballY = height / <span class="n">2</span> - GameConstants.BALL_SIZE / <span class="n">2</span>;
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">public</span> <span class="k">void</span> resetPaddle() {
+</span><span class="cl">        paddleY = height / <span class="n">2</span> - GameConstants.PADDLE_HEIGHT / <span class="n">2</span>;
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">public</span> <span class="k">void</span> movePaddle(<span class="k">int</span> amount) {
+</span><span class="cl">        paddleY += amount;
+</span><span class="cl">        <span class="k">if</span> (paddleY &lt; GameConstants.BORDER) {
+</span><span class="cl">            paddleY = GameConstants.BORDER;
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">if</span> (paddleY + GameConstants.PADDLE_HEIGHT &gt; height - GameConstants.BORDER) {
+</span><span class="cl">            paddleY = height - GameConstants.BORDER - GameConstants.PADDLE_HEIGHT;
+</span><span class="cl">        }
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">public</span> <span class="k">void</span> cpuMovePaddle() {
+</span><span class="cl">        <span class="k">int</span> cpuCenter = cpuPaddleY + GameConstants.PADDLE_HEIGHT / <span class="n">2</span>;
+</span><span class="cl">        <span class="k">int</span> ballCenter = ballY + GameConstants.BALL_SIZE / <span class="n">2</span>;
+</span><span class="cl">        <span class="k">int</span> cpuSpeed = <span class="n">6</span>;
+</span><span class="cl"> 
+</span><span class="cl">        <span class="k">if</span> (ballCenter &lt; cpuCenter) {
+</span><span class="cl">            cpuPaddleY -= cpuSpeed;
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">if</span> (ballCenter &gt; cpuCenter) {
+</span><span class="cl">            cpuPaddleY += cpuSpeed;
+</span><span class="cl">        }
+</span><span class="cl"> 
+</span><span class="cl">        <span class="k">if</span> (cpuPaddleY &lt; GameConstants.BORDER) {
+</span><span class="cl">            cpuPaddleY = GameConstants.BORDER;
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">if</span> (cpuPaddleY + GameConstants.PADDLE_HEIGHT &gt; height - GameConstants.BORDER) {
+</span><span class="cl">            cpuPaddleY = height - GameConstants.BORDER - GameConstants.PADDLE_HEIGHT;
+</span><span class="cl">        }
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">public</span> <span class="k">void</span> bouncing(<span class="k">int</span> paddleTopY) {
+</span><span class="cl">        <span class="k">int</span> paddleCenter = paddleTopY + GameConstants.PADDLE_HEIGHT / <span class="n">2</span>;
+</span><span class="cl">        <span class="k">int</span> ballCenter = ballY + GameConstants.BALL_SIZE / <span class="n">2</span>;
+</span><span class="cl">        <span class="k">int</span> angle = ballCenter - paddleCenter;
+</span><span class="cl"> 
+</span><span class="cl">        <span class="k">if</span> (angle &lt;= -<span class="n">20</span>) {
+</span><span class="cl">            dy = -<span class="n">10</span>;
+</span><span class="cl">        } <span class="k">else</span> <span class="k">if</span> (angle &lt;= -<span class="n">8</span> &amp;&amp; angle &gt; -<span class="n">20</span>) {
+</span><span class="cl">            dy = -<span class="n">8</span>;
+</span><span class="cl">        } <span class="k">else</span> <span class="k">if</span> (angle &gt;= -<span class="n">8</span> &amp;&amp; angle &lt; <span class="n">0</span>) {
+</span><span class="cl">            dy = -<span class="n">5</span>;
+</span><span class="cl">        } <span class="k">else</span> <span class="k">if</span> (angle == <span class="n">0</span>) {
+</span><span class="cl">            dy = <span class="n">0</span>;
+</span><span class="cl">        } <span class="k">else</span> <span class="k">if</span> (angle &gt; <span class="n">0</span> &amp;&amp; angle &lt;= <span class="n">8</span>) {
+</span><span class="cl">            dy = <span class="n">5</span>;
+</span><span class="cl">        } <span class="k">else</span> <span class="k">if</span> (angle &gt; <span class="n">8</span> &amp;&amp; angle &lt;= <span class="n">20</span>) {
+</span><span class="cl">            dy = <span class="n">8</span>;
+</span><span class="cl">        } <span class="k">else</span> <span class="k">if</span> (angle &gt; <span class="n">20</span>) {
+</span><span class="cl">            dy = <span class="n">10</span>;
+</span><span class="cl">        }
+</span><span class="cl"> 
+</span><span class="cl">    }
+</span><span class="cl">    <span class="k">public</span> <span class="k">void</span> tick() {
+</span><span class="cl">        <span class="k">if</span> (gameOver == <span class="k">true</span>) {
+</span><span class="cl">            <span class="k">return</span>;
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">if</span> (ballPause == <span class="k">true</span>) {
+</span><span class="cl">            pauseTicksRemaining--;
+</span><span class="cl">            <span class="k">if</span> (pauseTicksRemaining &lt;= <span class="n">0</span>) {
+</span><span class="cl">                ballPause = <span class="k">false</span>;
+</span><span class="cl">            }
+</span><span class="cl">            <span class="k">return</span>;
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">if</span> (gameMode.equals(<span class="s">&quot;cpu&quot;</span>)) {
+</span><span class="cl">            cpuMovePaddle();
+</span><span class="cl">        }
+</span><span class="cl">        ballX += dx;
+</span><span class="cl">        ballY += dy;
+</span><span class="cl">        <span class="k">if</span> (ballY &lt;= GameConstants.BORDER){
+</span><span class="cl">            ballY = GameConstants.BORDER;
+</span><span class="cl">            dy = -dy;
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">if</span> (ballY + GameConstants.BALL_SIZE &gt;= height - GameConstants.BORDER) {
+</span><span class="cl">            ballY = height - GameConstants.BORDER -GameConstants.BALL_SIZE;
+</span><span class="cl">            dy = -dy;
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">int</span> paddleX;
+</span><span class="cl">        <span class="k">if</span> (gameMode.equals(<span class="s">&quot;solo&quot;</span>)) {
+</span><span class="cl">            paddleX = width - GameConstants.BORDER - GameConstants.PADDLE_FILLER- GameConstants.PADDLE_WIDTH;
+</span><span class="cl">        } <span class="k">else</span> {
+</span><span class="cl">          paddleX = GameConstants.BORDER + GameConstants.PADDLE_FILLER;
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">boolean</span> overlapsUpandDown = ballY + GameConstants.BALL_SIZE &gt;= paddleY &amp;&amp;
+</span><span class="cl">                ballY &lt;= paddleY + GameConstants.PADDLE_HEIGHT;
+</span><span class="cl">        <span class="k">boolean</span> overlapsSidetoSide = ballX + GameConstants.BALL_SIZE &gt;= paddleX &amp;&amp;
+</span><span class="cl">                ballX &lt;= paddleX + GameConstants.PADDLE_WIDTH;;
+</span><span class="cl">        <span class="k">if</span> (gameMode.equals(<span class="s">&quot;solo&quot;</span>)) {
+</span><span class="cl">            <span class="k">if</span>(ballX &lt;= GameConstants.BORDER){
+</span><span class="cl">                ballX = GameConstants.BORDER;
+</span><span class="cl">                dx = -dx;
+</span><span class="cl">            }
+</span><span class="cl">            <span class="k">if</span> (dx &gt; <span class="n">0</span> &amp;&amp; overlapsUpandDown &amp;&amp; overlapsSidetoSide) {
+</span><span class="cl">                ballX = paddleX - GameConstants.BALL_SIZE;
+</span><span class="cl">                dx = -dx;
+</span><span class="cl">                soloScore++;
+</span><span class="cl">                bouncing(paddleY);
+</span><span class="cl">            }
+</span><span class="cl">        }
+</span><span class="cl"> 
+</span><span class="cl">        <span class="k">if</span> (gameMode.equals(<span class="s">&quot;cpu&quot;</span>)) {
+</span><span class="cl">            <span class="k">if</span>(dx &lt; <span class="n">0</span> &amp;&amp; overlapsUpandDown &amp;&amp; overlapsSidetoSide){
+</span><span class="cl">                ballX = paddleX + GameConstants.PADDLE_WIDTH;
+</span><span class="cl">                dx = -dx;
+</span><span class="cl">                bouncing(paddleY);
+</span><span class="cl">            }
+</span><span class="cl">            <span class="k">int</span> cpuPaddleX = width - GameConstants.BORDER - GameConstants.PADDLE_FILLER - GameConstants.PADDLE_WIDTH;
+</span><span class="cl"> 
+</span><span class="cl">            <span class="k">boolean</span> cpuOverlapsUpandDown = ballY + GameConstants.BALL_SIZE &gt;= cpuPaddleY &amp;&amp;
+</span><span class="cl">                    ballY &lt;= cpuPaddleY + GameConstants.PADDLE_HEIGHT;
+</span><span class="cl">            <span class="k">boolean</span> cpuOverlapsSidetoSide = ballX + GameConstants.BALL_SIZE &gt;= cpuPaddleX &amp;&amp;
+</span><span class="cl">                    ballX &lt;= cpuPaddleX + GameConstants.PADDLE_WIDTH;
+</span><span class="cl">            <span class="k">if</span> (dx &gt; <span class="n">0</span> &amp;&amp; cpuOverlapsUpandDown &amp;&amp; cpuOverlapsSidetoSide) {
+</span><span class="cl">                ballX = cpuPaddleX - GameConstants.BALL_SIZE;
+</span><span class="cl">                dx = -dx;
+</span><span class="cl">                bouncing(cpuPaddleY);
+</span><span class="cl">            }
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">if</span> (gameMode.equals(<span class="s">&quot;solo&quot;</span>)) {
+</span><span class="cl">            <span class="k">if</span> (ballX + GameConstants.BALL_SIZE &gt;= width - GameConstants.BORDER) {
+</span><span class="cl">                soloMisses++;
+</span><span class="cl">                <span class="k">if</span> (soloMisses &gt;= <span class="n">3</span>) {
+</span><span class="cl">                    gameOver = <span class="k">true</span>;
+</span><span class="cl">                }
+</span><span class="cl">                resetBall();
+</span><span class="cl">                pause();
+</span><span class="cl">            }
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">if</span> (gameMode.equals(<span class="s">&quot;cpu&quot;</span>)) {
+</span><span class="cl">            <span class="k">if</span> (ballX + GameConstants.BALL_SIZE&lt;= GameConstants.BORDER) {
+</span><span class="cl">                cpuScore++;
+</span><span class="cl">                <span class="k">if</span> (cpuScore &gt;= <span class="n">3</span>) {
+</span><span class="cl">                    gameOver = <span class="k">true</span>;
+</span><span class="cl">                }
+</span><span class="cl">                resetBall();
+</span><span class="cl">                pause();
+</span><span class="cl">                dx = <span class="n">4</span>;
+</span><span class="cl">            }
+</span><span class="cl">            <span class="k">if</span> (ballX + GameConstants.BALL_SIZE &gt;= width - GameConstants.BORDER) {
+</span><span class="cl">                humanScore++;
+</span><span class="cl">                <span class="k">if</span> (humanScore &gt;= <span class="n">3</span>) {
+</span><span class="cl">                    gameOver = <span class="k">true</span>;
+</span><span class="cl">                }
+</span><span class="cl">                resetBall();
+</span><span class="cl">                pause();
+</span><span class="cl">                dx = -<span class="n">4</span>;
+</span><span class="cl">            }
+</span><span class="cl">        }
+</span><span class="cl">    }
+</span><span class="cl">}
+</span></pre>
+</div>
+<div class="src-pane" id="p8" hidden data-path="java-source/pong/PongPanel.java" data-meta="95 LINES">
+<pre class="code"><span class="cl"><span class="k">import</span> javax.swing.JPanel;
+</span><span class="cl"><span class="k">import</span> java.awt.*;
+</span><span class="cl"><span class="k">import</span> javax.swing.Timer;
+</span><span class="cl"><span class="k">import</span> javax.swing.JOptionPane;
+</span><span class="cl"> 
+</span><span class="cl"><span class="k">public</span> <span class="k">class</span> PongPanel <span class="k">extends</span> JPanel{
+</span><span class="cl">    <span class="k">private</span> String gameMode;
+</span><span class="cl">    <span class="k">private</span> PongModel model;
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">public</span> PongPanel(String gameMode){
+</span><span class="cl">        <span class="k">this</span>.gameMode = gameMode;
+</span><span class="cl">        model = <span class="k">new</span> PongModel(GameConstants.WINDOW_WIDTH,GameConstants.WINDOW_HEIGHT, gameMode);
+</span><span class="cl">        Timer timer = <span class="k">new</span> Timer(GameConstants.TIMER_DELAY,e -&gt; {
+</span><span class="cl">            model.tick();
+</span><span class="cl">            repaint();
+</span><span class="cl"> 
+</span><span class="cl">            <span class="k">if</span> (model.gameOver == <span class="k">true</span>){
+</span><span class="cl">                String message = <span class="s">&quot;&quot;</span>;
+</span><span class="cl">                <span class="k">if</span> (gameMode.equals(<span class="s">&quot;solo&quot;</span>)){
+</span><span class="cl">                    message = <span class="s">&quot;Game Over! Final Score: &quot;</span> + model.soloScore + <span class="s">&quot;\nPlay Again?&quot;</span>;
+</span><span class="cl">                }
+</span><span class="cl">                <span class="k">if</span> (gameMode.equals(<span class="s">&quot;cpu&quot;</span>)){
+</span><span class="cl">                    String winner = <span class="s">&quot;&quot;</span>;
+</span><span class="cl">                    <span class="k">if</span> (model.humanScore &gt;= <span class="n">3</span>){
+</span><span class="cl">                        winner = <span class="s">&quot;You win!&quot;</span>;
+</span><span class="cl">                    }
+</span><span class="cl">                    <span class="k">if</span> (model.cpuScore &gt;= <span class="n">3</span>){
+</span><span class="cl">                        winner = <span class="s">&quot;CPU wins!&quot;</span>;
+</span><span class="cl">                    }
+</span><span class="cl">                    message = winner + <span class="s">&quot;\nFinal Score - You: &quot;</span> + model.humanScore + <span class="s">&quot;, CPU: &quot;</span> + model.cpuScore + <span class="s">&quot;\nPlay Again?&quot;</span>;
+</span><span class="cl">                }
+</span><span class="cl">                <span class="k">int</span> choice = JOptionPane.showConfirmDialog(
+</span><span class="cl">                        <span class="k">this</span>,
+</span><span class="cl">                        message,
+</span><span class="cl">                        <span class="s">&quot;Pong&quot;</span>,
+</span><span class="cl">                        JOptionPane.YES_NO_OPTION);
+</span><span class="cl">                <span class="k">if</span> (choice == JOptionPane.YES_OPTION){
+</span><span class="cl">                    model.resetGame();
+</span><span class="cl">                }<span class="k">else</span>{
+</span><span class="cl">                    System.exit(<span class="n">0</span>);
+</span><span class="cl">                }
+</span><span class="cl">            }
+</span><span class="cl">        });
+</span><span class="cl">        timer.start();
+</span><span class="cl">        addMouseWheelListener(e -&gt;{
+</span><span class="cl">            <span class="k">int</span> scrollAmount = e.getWheelRotation() * GameConstants.SCROLL_AMOUNT;
+</span><span class="cl">            model.movePaddle(scrollAmount);
+</span><span class="cl">            repaint();
+</span><span class="cl">        });
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    @Override
+</span><span class="cl">    <span class="k">protected</span> <span class="k">void</span> paintComponent(Graphics g){
+</span><span class="cl">        <span class="k">super</span>.paintComponent(g);
+</span><span class="cl">        g.setColor(Color.BLACK);
+</span><span class="cl">        g.fillRect(<span class="n">0</span>,<span class="n">0</span>,getWidth(),getHeight());
+</span><span class="cl">        g.setColor(Color.DARK_GRAY);
+</span><span class="cl">        g.drawRect(GameConstants.BORDER,GameConstants.BORDER, getWidth() - <span class="n">2</span>* GameConstants.BORDER, getHeight() - <span class="n">2</span> * GameConstants.BORDER);
+</span><span class="cl">        <span class="k">if</span> (gameMode.equals(<span class="s">&quot;cpu&quot;</span>)){
+</span><span class="cl">            <span class="k">int</span> centerX = GameConstants.DASH_WIDTH / <span class="n">2</span>;
+</span><span class="cl">            g.setColor(Color.DARK_GRAY);
+</span><span class="cl">            <span class="k">for</span> (<span class="k">int</span> y = GameConstants.BORDER; y &lt; getHeight() - GameConstants.BORDER; y += GameConstants.DASH_GAP){
+</span><span class="cl">                g.fillRect(centerX - GameConstants.DASH_WIDTH, y, GameConstants.DASH_WIDTH, GameConstants.DASH_HEIGHT);
+</span><span class="cl">            }
+</span><span class="cl">        }
+</span><span class="cl">        g.setColor(Color.WHITE);
+</span><span class="cl">        g.fillOval(model.ballX, model.ballY, GameConstants.BALL_SIZE, GameConstants.BALL_SIZE);
+</span><span class="cl">        <span class="k">int</span> paddleX;
+</span><span class="cl">        <span class="k">if</span> (gameMode.equals(<span class="s">&quot;solo&quot;</span>)){
+</span><span class="cl">            paddleX = getWidth() - GameConstants.BORDER - GameConstants.PADDLE_FILLER - GameConstants.PADDLE_WIDTH;
+</span><span class="cl">            g.fillRect(paddleX, model.paddleY, GameConstants.PADDLE_WIDTH, GameConstants.PADDLE_HEIGHT);
+</span><span class="cl"> 
+</span><span class="cl">        }
+</span><span class="cl"> 
+</span><span class="cl">        <span class="k">if</span> (gameMode.equals(<span class="s">&quot;cpu&quot;</span>)){
+</span><span class="cl">            paddleX = GameConstants.BORDER + GameConstants.PADDLE_FILLER;
+</span><span class="cl">            <span class="k">int</span> cpuPaddleX = getWidth() - GameConstants.BORDER - GameConstants.PADDLE_FILLER - GameConstants.PADDLE_WIDTH;
+</span><span class="cl">            g.fillRect(cpuPaddleX, model.cpuPaddleY, GameConstants.PADDLE_WIDTH, GameConstants.PADDLE_HEIGHT);
+</span><span class="cl">            g.fillRect(paddleX, model.paddleY, GameConstants.PADDLE_WIDTH, GameConstants.PADDLE_HEIGHT);
+</span><span class="cl"> 
+</span><span class="cl">        }
+</span><span class="cl"> 
+</span><span class="cl">        g.setColor(Color.WHITE);
+</span><span class="cl">        <span class="k">if</span> (gameMode.equals(<span class="s">&quot;solo&quot;</span>)){
+</span><span class="cl">            g.drawString(<span class="s">&quot;Score: &quot;</span> + model.soloScore, GameConstants.SOLO_SCORE_X, GameConstants.SCORE_Y);
+</span><span class="cl">            g.drawString(<span class="s">&quot;Misses: &quot;</span> + model.soloMisses, GameConstants.SOLO_MISSES_X, GameConstants.SCORE_Y);
+</span><span class="cl">        }
+</span><span class="cl">        <span class="k">if</span> (gameMode.equals(<span class="s">&quot;cpu&quot;</span>)){
+</span><span class="cl">            g.drawString(<span class="s">&quot;YOU: &quot;</span> + model.humanScore, GameConstants.SOLO_SCORE_X, GameConstants.SCORE_Y);
+</span><span class="cl">            g.drawString(<span class="s">&quot;CPU: &quot;</span> + model.cpuScore, getWidth() - GameConstants.BORDER - GameConstants.CPU_SCORE_OFFSET, GameConstants.SCORE_Y);
+</span><span class="cl">        }
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">}
+</span></pre>
+</div>
+<div class="src-pane" id="p9" hidden data-path="java-source/pong/PongLauncher.java" data-meta="22 LINES">
+<pre class="code"><span class="cl"><span class="k">import</span> javax.swing.JFrame;
+</span><span class="cl"><span class="k">import</span> java.awt.Dimension;
+</span><span class="cl"> 
+</span><span class="cl"><span class="k">public</span> <span class="k">class</span> PongLauncher {
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">public</span> <span class="k">static</span> <span class="k">void</span> main(String[] args){
+</span><span class="cl">        <span class="k">if</span> (args.length != <span class="n">1</span> || (!args[<span class="n">0</span>].equals(<span class="s">&quot;solo&quot;</span>) &amp;&amp; (!args[<span class="n">0</span>].equals(<span class="s">&quot;cpu&quot;</span>)))){
+</span><span class="cl">            System.err.println(<span class="s">&quot;Usage: java PongLauncher &lt;solo|cpu&gt;&quot;</span>);
+</span><span class="cl">            System.exit(<span class="n">1</span>);
+</span><span class="cl">        }
+</span><span class="cl">        JFrame frame = <span class="k">new</span> JFrame(<span class="s">&quot;Pong&quot;</span>);
+</span><span class="cl">        PongPanel panel = <span class="k">new</span> PongPanel(args[<span class="n">0</span>]);
+</span><span class="cl">        panel.setPreferredSize(<span class="k">new</span> Dimension(GameConstants.WINDOW_WIDTH, GameConstants.WINDOW_HEIGHT));
+</span><span class="cl">        frame.add(panel);
+</span><span class="cl">        frame.pack();
+</span><span class="cl">        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+</span><span class="cl">        frame.setResizable(<span class="k">false</span>);
+</span><span class="cl">        frame.setLocationRelativeTo(<span class="k">null</span>);
+</span><span class="cl">        frame.setVisible(<span class="k">true</span>);
+</span><span class="cl">    }
+</span><span class="cl">}
+</span></pre>
+</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var buttons = [].slice.call(document.querySelectorAll(".src-file"));
+  var pathEl = document.getElementById("srcPath");
+  var metaEl = document.getElementById("srcMeta");
+
+  function show(id) {
+    buttons.forEach(function (b) {
+      var on = b.getAttribute("data-pane") === id;
+      b.classList.toggle("is-active", on);
+    });
+    [].slice.call(document.querySelectorAll(".src-pane")).forEach(function (p) {
+      p.hidden = p.id !== id;
+      if (!p.hidden) {
+        pathEl.textContent = p.getAttribute("data-path");
+        metaEl.textContent = p.getAttribute("data-meta");
+      }
+    });
+  }
+
+  buttons.forEach(function (b) {
+    b.addEventListener("click", function () {
+      show(b.getAttribute("data-pane"));
+      // Switching files while scrolled deep into a long one used to drop you
+      // into the middle of the new file. Pull the top of the viewer back into
+      // view, but only when it has actually scrolled off.
+      var viewer = document.querySelector(".src-viewer");
+      if (viewer.getBoundingClientRect().top < 0) {
+        viewer.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    });
+  });
+
+  if (buttons.length) show(buttons[0].getAttribute("data-pane"));
+})();
+</script>
+
+<footer class="arcade-footer">
+  <p><a href="../index.html">&#9664; BACK TO THE ARCADE</a></p>
+</footer>
+
+<script src="../js/invaders-bg.js"></script>
+</body>
+</html>

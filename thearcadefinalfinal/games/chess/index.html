@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CHESS — The Arcade</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=IBM+Plex+Mono:wght@400;500&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="../../css/arcade.css" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml" />
+</head>
+<body>
+  <!-- Arcade background layers, shared with the rest of the site. -->
+  <canvas id="bg-invaders" aria-hidden="true"></canvas>
+  <div class="bg-grid" aria-hidden="true"></div>
+  <div class="bg-vignette" aria-hidden="true"></div>
+  <div class="bg-scanlines" aria-hidden="true"></div>
+
+  <div class="wrap">
+
+    <div class="shell-bar">
+      <div>
+        <h1 class="shell-title"><span class="brand-mark">&#9822;</span> CHESS &mdash; FIANCHETTO</h1>
+        <p class="shell-sub">Built for the browser &middot; castling, en passant, promotion</p>
+      </div>
+      <a class="btn btn-pink" href="../../index.html">&#9664; ARCADE</a>
+    </div>
+
+    <div class="cabinet" data-center>
+
+      <div class="hud">
+        <span class="hud-label">MODE:</span>
+        <div class="mode-toggle" id="modeToggle" role="group" aria-label="Game mode">
+          <button class="mode-btn is-active" data-mode="cpu" id="modeCpuBtn" type="button">
+            vs CPU
+          </button>
+          <button class="mode-btn" data-mode="human" id="modeHumanBtn" type="button">
+            vs Human
+          </button>
+          <span class="mode-slider" id="modeSlider" aria-hidden="true"></span>
+        </div>
+      </div>
+
+      <div class="cabinet-screen">
+        <main class="layout">
+      <section class="board-section">
+        <div class="status-bar" id="statusBar">
+          <span class="status-dot" id="statusDot"></span>
+          <span id="statusText">White to move</span>
+        </div>
+
+        <div class="board-wrap">
+          <div class="board" id="board" role="grid" aria-label="Chess board"></div>
+        </div>
+
+        <div class="board-controls">
+          <button id="newGameBtn" class="btn btn-primary" type="button">New Game</button>
+          <button id="undoBtn" class="btn" type="button">Undo</button>
+          <button id="flipBtn" class="btn" type="button">Flip Board</button>
+        </div>
+      </section>
+
+      <aside class="side-panel">
+        <div class="tray" id="capturedByWhiteTray">
+          <span class="tray-label">Captured by White</span>
+          <div class="tray-pieces" id="capturedByWhitePieces"></div>
+        </div>
+
+        <div class="ledger">
+          <div class="ledger-header">
+            <span>Move Ledger</span>
+          </div>
+          <ol class="move-list" id="moveList"></ol>
+        </div>
+
+        <div class="tray" id="capturedByBlackTray">
+          <span class="tray-label">Captured by Black</span>
+          <div class="tray-pieces" id="capturedByBlackPieces"></div>
+        </div>
+      </aside>
+        </main>
+      </div>
+
+      <p class="chess-note">
+        You play White against a CPU tuned to blunder like a real beginner, or hand
+        the mouse back and forth in <strong>vs Human</strong>. Click a piece or drag
+        it &mdash; legal squares light up green, captures ring pink.
+      </p>
+    </div>
+  </div>
+
+  <footer class="arcade-footer">
+    <p><a href="../../index.html">&#9664; BACK TO THE ARCADE</a></p>
+  </footer>
+
+  <div class="modal-overlay" id="promotionModal" hidden>
+    <div class="modal promotion-modal">
+      <p class="modal-title">Promote pawn to&hellip;</p>
+      <div class="promotion-options" id="promotionOptions"></div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="gameOverModal" hidden>
+    <div class="modal game-over-modal">
+      <p class="modal-eyebrow">Game Over</p>
+      <p class="modal-title" id="gameOverTitle">Checkmate</p>
+      <p class="modal-subtitle" id="gameOverSubtitle"></p>
+      <button class="btn btn-primary" id="gameOverNewGameBtn" type="button">New Game</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="switchModal" hidden>
+    <div class="modal switch-modal">
+      <p class="modal-title">Switch mode?</p>
+      <p class="modal-subtitle">Starting a new game will reset the current position.</p>
+      <div class="switch-modal-actions">
+        <button class="btn" id="switchCancelBtn" type="button">Cancel</button>
+        <button class="btn btn-primary" id="switchConfirmBtn" type="button">Switch &amp; Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <!--
+    Classic (non-module) scripts, loaded in dependency order. Each file
+    attaches its public API to window.App.<name> -- see the comment at the
+    top of each file. This works by double-clicking index.html directly
+    (no local server needed) because none of these use ES module import/export.
+  -->
+  <script src="../../js/invaders-bg.js"></script>
+  <script src="../../js/center-game.js"></script>
+  <script src="js/vendor/chess.js"></script>
+  <script src="js/constants.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/ai.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

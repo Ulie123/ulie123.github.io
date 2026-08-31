@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>OTHELLO — The Arcade</title>
+<link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../css/arcade.css" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<canvas id="bg-invaders" aria-hidden="true"></canvas>
+<div class="bg-grid" aria-hidden="true"></div>
+<div class="bg-vignette" aria-hidden="true"></div>
+<div class="bg-scanlines" aria-hidden="true"></div>
+
+<div class="wrap">
+
+  <div class="shell-bar">
+    <div>
+      <h1 class="shell-title">OTHELLO</h1>
+      <p class="shell-sub">Ported from Java Swing · You are black, you move first</p>
+    </div>
+    <a class="btn btn-pink" href="../../index.html">◀ ARCADE</a>
+  </div>
+
+  <div class="cabinet" data-center>
+
+    <div class="hud">
+      <span class="hud-label">OPPONENT:</span>
+      <select class="arcade-select" id="compType" aria-label="Opponent type">
+        <option value="GREEDY_CPU">GREEDY CPU</option>
+        <option value="MINIMAX_AI" selected>MINIMAX AI</option>
+      </select>
+      <span id="depthWrap">
+        <span class="hud-label">DEPTH:</span>
+        <input class="arcade-number" id="depth" type="number" min="1" max="6" step="1" value="3" aria-label="Minimax search depth" />
+      </span>
+      <button class="btn btn-amber" type="button" id="newGameBtn">NEW GAME</button>
+    </div>
+
+    <div class="cabinet-screen">
+      <div class="oth-board" id="board" role="grid" aria-label="Othello board"></div>
+    </div>
+
+    <div class="status-strip" id="status">YOUR TURN — YOU ARE BLACK</div>
+    <div class="score-strip" id="score">YOU 2 · CPU 2</div>
+
+    <p class="oth-note">
+      <strong>GREEDY CPU</strong> takes whichever move flips the most discs this turn —
+      which is exactly the trap Othello sets for beginners.
+      <strong>MINIMAX AI</strong> searches ahead instead, assuming you'll answer with
+      your best reply. Depth 5–6 gets slow: it's the same exhaustive search the
+      Java version ran, and it thinks with the page held still.
+    </p>
+  </div>
+</div>
+
+<footer class="arcade-footer">
+  <p><a href="../../index.html">◀ BACK TO THE ARCADE</a></p>
+</footer>
+
+<div class="arcade-modal" id="gameOverModal" hidden>
+  <div class="arcade-modal-box">
+    <p class="arcade-modal-title" id="gameOverTitle">GAME OVER</p>
+    <p class="arcade-modal-sub" id="gameOverSubtitle"></p>
+    <div class="arcade-modal-actions">
+      <button class="btn" type="button" id="playAgainBtn">PLAY AGAIN</button>
+      <a class="btn btn-pink" href="../../index.html">QUIT</a>
+    </div>
+  </div>
+</div>
+
+<script src="../../js/invaders-bg.js"></script>
+<script src="../../js/center-game.js"></script>
+<script src="js/othello-model.js"></script>
+<script src="js/othello-ai.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

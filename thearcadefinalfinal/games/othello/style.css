@@ -1,0 +1,113 @@
+/* Othello board. Shared chrome comes from ../../css/arcade.css */
+
+.oth-board {
+  display: grid;
+  /* Two bugs lived here. There were no explicit ROWS at all, so the eight rows
+     were implicit `auto` tracks sized by their contents -- a row holding discs
+     came out taller than an empty one, which is why the cells weren't square.
+     And repeat(8, 1fr) is really repeat(8, minmax(auto, 1fr)), whose `auto`
+     floor let a disc widen its column the same way. Explicit minmax(0, 1fr)
+     tracks in both directions fix both: 64 identical cells, always. */
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  grid-template-rows: repeat(8, minmax(0, 1fr));
+  gap: 2px;
+  /* Width only -- the board holds its size rather than shrinking with the
+     window. center-game.js scrolls it into view instead. */
+  width: min(520px, 84vw);
+  aspect-ratio: 1 / 1;
+  margin: 0 auto;
+  background: #1e4a24;
+  border: 4px solid #1e4a24;
+  box-shadow: 0 0 34px rgba(124, 255, 107, 0.15);
+}
+
+.oth-board.is-thinking { cursor: progress; }
+.oth-board.is-thinking .oth-cell { pointer-events: none; }
+
+.oth-cell {
+  position: relative;
+  /* A grid item's automatic minimum is min-content; zeroing it stops the disc
+     inside from ever pushing its row or column wider. */
+  min-width: 0;
+  min-height: 0;
+  aspect-ratio: 1 / 1;
+  border: 0;
+  padding: 0;
+  background: #0b2a12;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s;
+}
+
+.oth-cell:hover { background: #10381a; }
+.oth-cell:focus-visible { outline: 2px solid var(--amber); outline-offset: -2px; }
+
+.oth-disc {
+  display: block;
+  width: 74%;
+  height: 74%;
+  border-radius: 50%;
+  transform: scale(0);
+  transition: transform 0.16s steps(3), background 0.16s, border-color 0.16s;
+}
+
+/* You. Dark disc with a neon rim so it reads on a dark board. */
+.oth-cell.has-black .oth-disc {
+  transform: scale(1);
+  background: radial-gradient(circle at 34% 30%, #2a3a2c, #050a06 70%);
+  border: 2px solid var(--neon);
+  box-shadow: 0 0 12px rgba(124, 255, 107, 0.5);
+}
+
+/* The computer. */
+.oth-cell.has-white .oth-disc {
+  transform: scale(1);
+  background: radial-gradient(circle at 34% 30%, #ffffff, #b9d6b4 72%);
+  border: 2px solid #eafce6;
+  box-shadow: 0 0 12px rgba(230, 255, 226, 0.45);
+}
+
+/* Legal move for you — the yellow dot from the Swing version. */
+.oth-cell.is-hint .oth-disc {
+  transform: scale(0.52);
+  background: transparent;
+  border: 3px solid var(--amber);
+  box-shadow: 0 0 12px rgba(255, 207, 74, 0.6);
+  animation: hintpulse 1.4s ease-in-out infinite;
+}
+
+@keyframes hintpulse {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 1; }
+}
+
+.oth-cell.is-last::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border: 2px solid rgba(91, 224, 255, 0.75);
+  pointer-events: none;
+}
+
+.oth-cell.is-illegal { background: #4a1414; }
+
+/* --------------------------------------------------------------- controls */
+
+.oth-note {
+  font-size: 12px;
+  color: var(--ink-soft);
+  text-align: center;
+  margin: 18px auto 0;
+  max-width: 560px;
+  line-height: 1.8;
+}
+
+.oth-note strong { color: var(--neon); font-weight: 500; }
+
+#depthWrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}

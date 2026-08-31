@@ -1,0 +1,691 @@
+/* ==========================================================================
+   Fianchetto — arcade skin
+
+   Restyled to match The Arcade: black ground, neon green, pixel type.
+   Every selector name is unchanged from the original stylesheet, so none of
+   the JavaScript needed touching — ui.js still writes `square light`,
+   `is-selected`, `piece-black` and the rest, they just look different now.
+
+   The board keeps its two-tone squares (dark green / near-black) because
+   chess is unreadable without them; the contrast lives in the pieces instead:
+   white plays as bone-white, black plays as a pink-outlined silhouette.
+   ========================================================================== */
+
+:root {
+  /* ---- ground ---- */
+  --bg: #04060a;
+  --bg-panel: #0a1110;
+  --bg-panel-raised: #0e1a14;
+
+  /* ---- board ---- */
+  --wood-light: #20512a;   /* "light" squares — dark forest green */
+  --wood-dark:  #081009;   /* "dark" squares  — near black        */
+
+  /* ---- accents (the old brass slots, now neon) ---- */
+  --brass: #4f9e45;
+  --brass-bright: #7cff6b;
+  --brass-dim: #2f6a2b;
+  --neon-glow: rgba(124, 255, 107, 0.55);
+
+  --amber: #ffcf4a;
+  --pink: #ff63c8;
+  --cyan: #5be0ff;
+
+  --ink: #dff7da;
+  --ink-muted: #8fae8b;
+  --ink-faint: #4f7a4c;
+
+  --felt-green: #5be0ff;   /* last-move tint  */
+  --oxblood: #ff4a4a;      /* check / danger  */
+
+  --font-display: "Press Start 2P", "Courier New", monospace;
+  --font-body: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+
+  --radius-sm: 0;
+  --radius-md: 0;
+  --shadow-deep: 0 0 40px rgba(124, 255, 107, 0.14);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  /* Bottom padding on top of the footer's own, so there's room to scroll past
+     the New Game / Undo / Flip row instead of it sitting flush on the edge. */
+  padding: 0 0 40px;
+  overflow-x: hidden;
+}
+
+/* Background layers (#bg-invaders, .bg-grid, .bg-vignette, .bg-scanlines) and
+   the cabinet chrome (.wrap, .shell-bar, .cabinet, .hud, .arcade-footer) come
+   from ../../css/arcade.css, which is loaded ahead of this file. Anything both
+   sheets define -- .btn above all -- is won by this one, since it comes last.
+   ========================================================================== */
+
+/* ==========================================================================
+   Layout shell
+   ========================================================================== */
+
+/* Narrower than the arcade default 1120px. Chess only needs room for a board
+   and a 280px side panel; at full width the board floated in a lot of empty
+   cabinet. */
+.wrap {
+  width: min(1000px, 92vw);
+}
+
+.shell-title .brand-mark {
+  font-size: 1.3em;
+  color: var(--brass-bright);
+  margin-right: 4px;
+}
+
+/* The note under the cabinet, matching the other three games. */
+.chess-note {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  text-align: center;
+  margin: 18px auto 0;
+  max-width: 560px;
+  line-height: 1.8;
+}
+
+.chess-note strong { color: var(--brass-bright); font-weight: 500; }
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(230px, 280px);
+  gap: 24px;
+  align-items: start;
+}
+
+/* Stacks earlier than before: the cabinet's own border and padding eat ~76px
+   of width, so the two columns run out of room above the old 900px mark. */
+@media (max-width: 1000px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ==========================================================================
+   Mode toggle — segmented, square-cornered, no more brass pill
+   ========================================================================== */
+
+.mode-toggle {
+  position: relative;
+  display: inline-flex;
+  background: #0b1a10;
+  border: 2px solid var(--brass-dim);
+  border-radius: 0;
+  padding: 3px;
+  gap: 0;
+}
+
+.mode-btn {
+  position: relative;
+  z-index: 2;
+  border: none;
+  background: transparent;
+  color: var(--ink-muted);
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  padding: 12px 18px;
+  border-radius: 0;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.mode-btn:hover {
+  color: var(--brass-bright);
+}
+
+.mode-btn.is-active {
+  color: #04140a;
+}
+
+.mode-slider {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  height: calc(100% - 6px);
+  width: calc(50% - 3px);
+  background: var(--brass-bright);
+  border-radius: 0;
+  box-shadow: 0 0 16px rgba(124, 255, 107, 0.45);
+  transition: transform 0.2s steps(4);
+  z-index: 1;
+}
+
+.mode-toggle[data-mode="human"] .mode-slider {
+  transform: translateX(100%);
+}
+
+/* ==========================================================================
+   Status bar
+   ========================================================================== */
+
+.status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-family: var(--font-display);
+  font-size: 10px;
+  line-height: 1.7;
+  color: var(--brass-bright);
+  margin-bottom: 14px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  text-shadow: 0 0 10px var(--neon-glow);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 0;
+  background: var(--brass-bright);
+  box-shadow: 0 0 10px var(--neon-glow);
+}
+
+.status-bar.is-check {
+  color: var(--oxblood);
+  text-shadow: 0 0 10px rgba(255, 74, 74, 0.6);
+}
+
+.status-bar.is-check .status-dot {
+  background: var(--oxblood);
+  box-shadow: 0 0 10px rgba(255, 74, 74, 0.6);
+}
+
+.status-bar.is-thinking .status-dot {
+  animation: pulse 1s steps(2, start) infinite;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.2;
+  }
+}
+
+/* ==========================================================================
+   Board
+   ========================================================================== */
+
+.board-wrap {
+  display: flex;
+  justify-content: center;
+}
+
+.board {
+  display: grid;
+  /* repeat(8, 1fr) is really repeat(8, minmax(auto, 1fr)) -- the `auto` floor
+     lets a track grow to fit its contents, so any row or column holding a
+     piece glyph came out wider than the empty ones and the squares changed
+     size as the game went on. minmax(0, 1fr) removes that floor: eight equal
+     tracks, always. */
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  grid-template-rows: repeat(8, minmax(0, 1fr));
+  /* A fixed size that only responds to WIDTH. It deliberately ignores window
+     height -- the board should look the same on every screen and you scroll to
+     it (center-game.js puts it in the middle for you) rather than have it
+     shrink under you. */
+  width: min(520px, 100%);
+  aspect-ratio: 1 / 1;
+  border: 6px solid var(--brass-dim);
+  border-radius: 0;
+  box-shadow: var(--shadow-deep), inset 0 0 0 1px rgba(0, 0, 0, 0.5);
+  background: var(--wood-dark);
+}
+
+.square {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Belt and braces with minmax(0, 1fr) above: a grid item's automatic minimum
+     size is min-content, which for a big glyph is the glyph. Zeroing it means
+     the piece can never push its square around. */
+  min-width: 0;
+  min-height: 0;
+  /* Fallback for browsers without container queries. */
+  font-size: clamp(1.1rem, 4.4vw, 2.4rem);
+  user-select: none;
+  cursor: pointer;
+}
+
+/* Scale the pieces off the BOARD rather than off the viewport, so a piece is
+   always the same fraction of its square no matter how the board was sized.
+   1cqw is 1% of the board's content box, and a square is 12.5% of it. */
+@supports (container-type: size) {
+  .board {
+    container-type: size;
+  }
+
+  .square {
+    font-size: clamp(12px, 8.6cqw, 46px);
+  }
+}
+
+.square.light {
+  background: var(--wood-light);
+}
+
+.square.dark {
+  background: var(--wood-dark);
+}
+
+.square .piece {
+  position: relative;
+  z-index: 2;
+  line-height: 1;
+  transition: transform 0.12s ease;
+}
+
+/* White plays as bone-white with a black rim — legible on both square
+   colours. Black plays as a near-black fill carrying a hot-pink rim, so it
+   reads as a pink-outlined silhouette on the dark squares and as a dark
+   shape with a pink edge on the green ones. */
+.square .piece.piece-white {
+  color: #f2fff0;
+  -webkit-text-stroke: 1.75px #04060a;
+  paint-order: stroke fill;
+  filter: drop-shadow(0 0 6px rgba(180, 255, 170, 0.5));
+}
+
+.square .piece.piece-black {
+  color: #050a06;
+  -webkit-text-stroke: 1.75px var(--pink);
+  paint-order: stroke fill;
+  filter: drop-shadow(0 0 6px rgba(255, 99, 200, 0.45));
+}
+
+.square[draggable="true"] .piece {
+  cursor: grab;
+}
+
+.square.is-dragging .piece {
+  opacity: 0.35;
+}
+
+.square:hover:not(.is-selected)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  box-shadow: inset 0 0 0 2px rgba(124, 255, 107, 0.35);
+  pointer-events: none;
+}
+
+/* coordinate labels */
+.square .coord {
+  position: absolute;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: rgba(124, 255, 107, 0.35);
+  pointer-events: none;
+}
+
+.square.light .coord {
+  color: rgba(180, 255, 170, 0.45);
+}
+
+.square .coord.file {
+  bottom: 2px;
+  right: 4px;
+}
+
+.square .coord.rank {
+  top: 2px;
+  left: 4px;
+}
+
+/* Highlights sit at z-index 0/1, under the piece at z-index 2 — decorating
+   the square, never outlining the piece standing on it. */
+.square.is-selected::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: rgba(255, 207, 74, 0.38);
+  box-shadow: inset 0 0 0 3px var(--amber);
+}
+
+.square.is-last-move::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: rgba(91, 224, 255, 0.2);
+  box-shadow: inset 0 0 0 2px rgba(91, 224, 255, 0.55);
+}
+
+.square.is-check::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: rgba(255, 74, 74, 0.45);
+  box-shadow: inset 0 0 0 3px var(--oxblood);
+}
+
+.square .move-dot {
+  position: absolute;
+  z-index: 1;
+  width: 24%;
+  height: 24%;
+  border-radius: 50%;
+  background: rgba(124, 255, 107, 0.65);
+  box-shadow: 0 0 10px rgba(124, 255, 107, 0.5);
+  pointer-events: none;
+}
+
+.square .capture-ring {
+  position: absolute;
+  z-index: 1;
+  inset: 6%;
+  border-radius: 50%;
+  border: 4px solid rgba(255, 99, 200, 0.75);
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   Controls
+   ========================================================================== */
+
+.board-controls {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+.btn {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 9px;
+  line-height: 1.6;
+  letter-spacing: 0.04em;
+  color: var(--brass-bright);
+  background: #0b1a10;
+  border: 2px solid var(--brass-dim);
+  border-radius: 0;
+  padding: 12px 15px;
+  cursor: pointer;
+  box-shadow: 0 3px 0 #051007;
+  transition: transform 0.08s steps(2), border-color 0.15s ease,
+              background 0.15s ease, color 0.15s ease;
+}
+
+.btn:hover:not(:disabled) {
+  border-color: var(--brass-bright);
+  background: #102a17;
+  color: #b7ff9f;
+  transform: translateY(-2px);
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: 0 1px 0 #051007;
+}
+
+.btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* arcade.css defines .btn-pink for the back-to-arcade button, but this
+   sheet's plain .btn rule loads later and would repaint it green. Restated
+   here so the pink convention survives. */
+.btn-pink {
+  color: var(--pink);
+  border-color: #8c3a6f;
+  background: #1a0d16;
+  box-shadow: 0 3px 0 #0d0610;
+}
+
+.btn-pink:hover:not(:disabled) {
+  color: #ffc2ea;
+  border-color: var(--pink);
+  background: #2a0f22;
+}
+
+.btn-primary {
+  background: var(--brass-bright);
+  color: #04140a;
+  border-color: #b7ff9f;
+  text-shadow: none;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #b7ff9f;
+  color: #04140a;
+}
+
+/* ==========================================================================
+   Side panel — ledger & trays
+   ========================================================================== */
+
+.side-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.tray {
+  background: #070d0a;
+  border: 2px solid #1a3120;
+  border-radius: 0;
+  padding: 14px;
+}
+
+.tray-label {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 8px;
+  line-height: 1.7;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 10px;
+}
+
+.tray-pieces {
+  /* Two rows' worth, so the first capture doesn't grow the box. */
+  min-height: 3.4rem;
+  font-size: 1.3rem;
+  letter-spacing: 3px;
+  color: var(--ink-muted);
+}
+
+/* The ledger used to grow with the game, shoving the lower tray down the page
+   move by move. It's a fixed box now -- six rows tall -- and older moves
+   scroll up out of view. ui.js already pins the list to the newest move. */
+.ledger {
+  background: #070d0a;
+  border: 2px solid #1a3120;
+  border-radius: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.ledger-header {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 9px;
+  line-height: 1.7;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 14px;
+  border-bottom: 2px solid #1a3120;
+  color: var(--brass-bright);
+}
+
+.move-list {
+  list-style: none;
+  margin: 0;
+  padding: 6px 4px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  /* Exactly six 28px rows plus the list's own 6px top and bottom padding. */
+  height: calc(6 * 28px + 12px);
+}
+
+/* Fixed row height so exactly six rows fill the list box -- no half-row
+   peeking out of the bottom whatever font ends up loading. */
+.move-list li {
+  display: grid;
+  grid-template-columns: 32px 1fr 1fr;
+  align-items: center;
+  gap: 8px;
+  height: 28px;
+  padding: 0 10px;
+  border-bottom: 1px dotted rgba(124, 255, 107, 0.12);
+  color: var(--ink-muted);
+}
+
+.move-list .move-number {
+  color: var(--ink-faint);
+}
+
+.move-list .move-white {
+  color: #e8ffe4;
+}
+
+.move-list .move-black {
+  color: var(--pink);
+}
+
+.move-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.move-list::-webkit-scrollbar-thumb {
+  background: var(--brass-dim);
+  border-radius: 0;
+}
+
+/* ==========================================================================
+   Modals
+   ========================================================================== */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 4, 0.86);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-overlay[hidden] {
+  display: none;
+}
+
+.modal {
+  background: #071009;
+  border: 2px solid var(--brass-bright);
+  border-radius: 0;
+  padding: 30px 28px;
+  text-align: center;
+  max-width: 400px;
+  box-shadow: 0 0 40px rgba(124, 255, 107, 0.3);
+  animation: pop 0.18s steps(3);
+}
+
+@keyframes pop {
+  from { transform: scale(0.86); }
+  to   { transform: scale(1); }
+}
+
+.modal-eyebrow {
+  font-family: var(--font-display);
+  font-size: 8px;
+  line-height: 1.8;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--pink);
+  margin: 0 0 12px;
+}
+
+.modal-title {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 1.7;
+  margin: 0 0 14px;
+  color: var(--brass-bright);
+  text-shadow: 0 0 12px var(--neon-glow);
+}
+
+.modal-subtitle {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--ink-muted);
+  margin: 0 0 22px;
+}
+
+.promotion-options {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.promotion-options button {
+  font-size: 1.9rem;
+  width: 58px;
+  height: 58px;
+  border-radius: 0;
+  border: 2px solid var(--brass-dim);
+  background: #0b1a10;
+  color: var(--ink);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.promotion-options button:hover {
+  border-color: var(--brass-bright);
+  background: #102a17;
+}
+
+.switch-modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* ==========================================================================
+   Accessibility
+   ========================================================================== */
+
+.btn:focus-visible,
+.mode-btn:focus-visible,
+.square:focus-visible,
+.promotion-options button:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

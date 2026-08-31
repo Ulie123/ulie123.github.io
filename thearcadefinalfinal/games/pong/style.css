@@ -1,0 +1,88 @@
+/* Pong. Shared chrome comes from ../../css/arcade.css */
+
+.pong-stage {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  scroll-margin-top: 16px;
+}
+
+/* 700x500 — the size of the Java window — backing off only as far as it must
+   to keep the whole cabinet, borders included, on a short screen. 260px is
+   what the chrome above and below the playfield costs, and the x1.4 converts
+   the height that leaves into a width at the board's 700:500 ratio. Above
+   about 620px of window height it stays the full 700. */
+#pong,
+.attract {
+  width: min(700px, 100%, calc((100vh - 260px) * 1.4));
+}
+
+#pong {
+  display: block;
+  height: auto;
+  aspect-ratio: 700 / 500;
+  background: #000;
+  border: 2px solid #16301c;
+  box-shadow: 0 0 34px rgba(124, 255, 107, 0.14);
+  touch-action: none;
+}
+
+/* `hidden` has to beat the `display: block` above, which is a stronger
+   selector — without this the canvas stayed on screen as an empty second box
+   beside the attract screen. */
+#pong[hidden] {
+  display: none !important;
+}
+
+/* ------------------------------------------------------------ attract mode */
+
+.attract {
+  aspect-ratio: 700 / 500;
+  background: #000;
+  border: 2px solid #16301c;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  text-align: center;
+  padding: 20px;
+}
+
+.attract[hidden] { display: none; }
+
+.attract h2 {
+  font-family: var(--pixel);
+  font-size: clamp(22px, 6vw, 46px);
+  color: var(--neon);
+  margin: 0;
+  letter-spacing: 0.12em;
+  text-shadow: 0 0 16px var(--neon-glow), 4px 4px 0 #0d3a09;
+}
+
+.attract p {
+  font-family: var(--pixel);
+  font-size: 9px;
+  color: var(--ink-soft);
+  margin: 0;
+  line-height: 2;
+  letter-spacing: 0.06em;
+}
+
+.attract-modes {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.pong-hint {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  text-align: center;
+  margin: 18px auto 0;
+  max-width: 540px;
+  line-height: 1.8;
+}

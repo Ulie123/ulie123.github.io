@@ -1,0 +1,140 @@
+/* Tic-Tac-Toe specific styling. Shared chrome comes from ../../css/arcade.css */
+
+:root {
+  /* One number drives the board in every mode. Width only -- like the other
+     boards it holds its size rather than shrinking with window height, and
+     center-game.js scrolls it into the middle of the window instead. */
+  --t3-board: min(450px, 78vw);
+}
+
+.t3-stage {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: var(--t3-board);
+}
+
+/* ---------------------------------------------------------------- buttons */
+
+.t3-grid {
+  display: grid;
+  /* minmax(0, 1fr), not 1fr: a plain 1fr track has an `auto` minimum, so a
+     cell holding a big X or O could widen its whole row and column. */
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  width: var(--t3-board);
+  height: var(--t3-board);
+  background: #3f8c39;
+  border: 4px solid #3f8c39;
+}
+
+.t3-cell {
+  min-width: 0;
+  min-height: 0;
+  font-family: var(--pixel);
+  font-size: clamp(26px, 7vw, 44px);
+  background: #050b07;
+  border: 0;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.t3-cell:not(:disabled):hover { background: #0e2412; }
+.t3-cell:not(:disabled):focus-visible { outline: 3px solid var(--amber); outline-offset: -3px; }
+.t3-cell:disabled { cursor: default; }
+
+.t3-cell.is-x { color: var(--neon); text-shadow: 0 0 14px var(--neon-glow); }
+.t3-cell.is-o { color: var(--pink); text-shadow: 0 0 14px rgba(255, 99, 200, 0.7); }
+
+.t3-cell.is-win {
+  background: #1b2f10;
+  animation: winpulse 0.6s steps(2) infinite;
+}
+
+@keyframes winpulse {
+  50% { background: #2c4a16; }
+}
+
+/* ------------------------------------------------------------------ paint */
+
+.t3-canvas {
+  width: var(--t3-board);
+  height: var(--t3-board);
+  image-rendering: auto;
+  cursor: crosshair;
+  border: 2px solid #16301c;
+}
+
+/* ---------------------------------------------------------------- console */
+
+.t3-terminal {
+  width: min(450px, 88vw);
+  background: #030805;
+  border: 2px solid #16301c;
+  padding: 18px;
+}
+
+/* NOT var(--mono). IBM Plex Mono has no box-drawing glyphs, so ┌ ─ ┬ fell back
+   to whatever system font did have them — at a different advance width, which
+   is what knocked the grid out of alignment. This stack is system monospace
+   only; every font in it draws the box characters at the same width as ASCII,
+   so the whole board renders in one font and the lines line up. */
+.t3-term-out {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, "DejaVu Sans Mono",
+               "Liberation Mono", "Courier New", monospace;
+  font-size: clamp(12px, 3.1vw, 15px);
+  line-height: 1.55;
+  color: var(--neon);
+  margin: 0 0 16px;
+  white-space: pre;
+  text-shadow: 0 0 8px rgba(124, 255, 107, 0.35);
+  min-height: 230px;
+  overflow-x: auto;
+}
+
+.t3-term-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-top: 1px dashed #1e3a22;
+  padding-top: 14px;
+}
+
+.t3-term-caret {
+  font-family: var(--pixel);
+  font-size: 9px;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.t3-term-input {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--mono);
+  font-size: 16px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  background: #071009;
+  border: 2px solid #1e3a22;
+  color: var(--neon-hot);
+  padding: 9px 12px;
+}
+
+.t3-term-input:focus-visible { outline: none; border-color: var(--neon); }
+.t3-term-input:disabled { opacity: 0.4; }
+
+/* ------------------------------------------------------------------ notes */
+
+.t3-hint {
+  font-size: 12px;
+  color: var(--ink-soft);
+  text-align: center;
+  margin: 16px 0 0;
+  line-height: 1.7;
+}

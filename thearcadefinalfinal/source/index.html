@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ALL SOURCE — The Arcade</title>
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../css/arcade.css" />
+<link rel="stylesheet" href="../css/home.css" />
+<link rel="stylesheet" href="../css/source.css" />
+</head>
+<body>
+
+<canvas id="bg-invaders" aria-hidden="true"></canvas>
+<div class="bg-grid" aria-hidden="true"></div>
+<div class="bg-vignette" aria-hidden="true"></div>
+<div class="bg-scanlines" aria-hidden="true"></div>
+
+<div class="wrap">
+
+  <div class="shell-bar">
+    <div>
+      <h1 class="shell-title">SOURCE CODE</h1>
+      <p class="shell-sub">Every file behind the four games</p>
+    </div>
+    <a class="btn btn-pink" href="../index.html">&#9664; ARCADE</a>
+  </div>
+
+  <div class="src-intro">
+    <p>
+      Pick a game to read its code. Each page lists the JavaScript that runs in
+      your browser, the HTML and CSS around it, and &mdash; for the three ports
+      &mdash; the original Java Swing files they were translated from.
+    </p>
+    <p>
+      The <code>.java</code> files on their own are also in
+      <a href="../java-source/index.html">/java-source</a>.
+    </p>
+  </div>
+
+  <div class="src-hub">
+    <div class="about-box">
+      <h3>TIC-TAC-TOE</h3>
+      <p>One model, three front ends — buttons, canvas and console — plus the Swing originals.</p>
+      <p style="margin-top:14px;"><a href="tictactoe.html">Read the code &rarr;</a></p>
+    </div>
+    <div class="about-box">
+      <h3>OTHELLO</h3>
+      <p>Board rules, the greedy CPU and the minimax search, next to the Java they came from.</p>
+      <p style="margin-top:14px;"><a href="othello.html">Read the code &rarr;</a></p>
+    </div>
+    <div class="about-box">
+      <h3>PONG</h3>
+      <p>Physics, the 16ms tick and the canvas draw loop, next to the Java they came from.</p>
+      <p style="margin-top:14px;"><a href="pong.html">Read the code &rarr;</a></p>
+    </div>
+    <div class="about-box">
+      <h3>CHESS</h3>
+      <p>Built for the browser, so no Java — the engine wrapper, the AI, and the arcade skin.</p>
+      <p style="margin-top:14px;"><a href="chess.html">Read the code &rarr;</a></p>
+    </div>
+    <div class="about-box">
+      <h3>THE JAVA ORIGINALS</h3>
+      <p>All fourteen Swing files on their own, without the JavaScript beside them.</p>
+      <p style="margin-top:14px;"><a href="../java-source/index.html">Read the code &rarr;</a></p>
+    </div>
+  </div>
+</div>
+
+<footer class="arcade-footer">
+  <p><a href="../index.html">&#9664; BACK TO THE ARCADE</a></p>
+</footer>
+
+<script src="../js/invaders-bg.js"></script>
+</body>
+</html>

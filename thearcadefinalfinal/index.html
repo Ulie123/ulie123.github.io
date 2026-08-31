@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>THE ARCADE — four games, one quarter</title>
+<meta name="description" content="A tiny browser arcade: Tic-Tac-Toe, Othello, Pong and Chess. Three of them started life as Java Swing programs." />
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="css/arcade.css" />
+<link rel="stylesheet" href="css/home.css" />
+</head>
+<body>
+
+<canvas id="bg-invaders" aria-hidden="true"></canvas>
+<div class="bg-grid" aria-hidden="true"></div>
+<div class="bg-vignette" aria-hidden="true"></div>
+<div class="bg-scanlines" aria-hidden="true"></div>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="marquee">
+      <h1>
+        THE
+        <span class="line2">ARCADE</span>
+      </h1>
+    </div>
+    <p class="hero-tagline">
+      FOUR GAMES &nbsp;·&nbsp; ONE QUARTER<br />
+      <span class="coin">INSERT COIN <span class="blink">_</span></span>
+    </p>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <div class="section-head"><h2>SELECT GAME</h2></div>
+
+  <div class="game-grid">
+
+    <!-- ============================ TIC-TAC-TOE ============================ -->
+    <article class="game-card">
+      <svg class="card-icon" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
+        <g fill="#3f8c39">
+          <rect x="5" y="1" width="1" height="14"/><rect x="10" y="1" width="1" height="14"/>
+          <rect x="1" y="5" width="14" height="1"/><rect x="1" y="10" width="14" height="1"/>
+        </g>
+        <g fill="#7cff6b">
+          <rect x="1" y="1" width="1" height="1"/><rect x="2" y="2" width="1" height="1"/>
+          <rect x="3" y="3" width="1" height="1"/><rect x="4" y="4" width="1" height="1"/>
+          <rect x="4" y="1" width="1" height="1"/><rect x="3" y="2" width="1" height="1"/>
+          <rect x="2" y="3" width="1" height="1"/><rect x="1" y="4" width="1" height="1"/>
+          <rect x="11" y="11" width="1" height="1"/><rect x="12" y="12" width="1" height="1"/>
+          <rect x="13" y="13" width="1" height="1"/><rect x="14" y="14" width="1" height="1"/>
+          <rect x="14" y="11" width="1" height="1"/><rect x="13" y="12" width="1" height="1"/>
+          <rect x="12" y="13" width="1" height="1"/><rect x="11" y="14" width="1" height="1"/>
+        </g>
+        <g fill="#ff63c8">
+          <rect x="7" y="6" width="2" height="1"/><rect x="6" y="7" width="1" height="2"/>
+          <rect x="9" y="7" width="1" height="2"/><rect x="7" y="9" width="2" height="1"/>
+        </g>
+      </svg>
+      <h3 class="card-title">TIC-TAC-TOE</h3>
+      <div class="card-tags">
+        <span class="tag tag-port">JAVA → JS PORT</span>
+        <span class="tag">3 UIs</span>
+      </div>
+      <p class="card-blurb">
+        The original had three interchangeable front ends over one model — buttons,
+        hand-painted canvas, and a text console. All three made the trip. Flip between
+        them mid-game; the board keeps its state.
+      </p>
+      <div class="card-actions">
+        <a class="btn" href="games/tictactoe/index.html">▶ PLAY</a>
+        <button class="popout" data-popout="games/tictactoe/index.html" data-w="620" data-h="740" title="Open in its own window">⧉</button>
+        <a class="popout popout-src" href="source/tictactoe.html">&lt;/&gt; SEE SOURCE</a>
+      </div>
+    </article>
+
+    <!-- ============================== OTHELLO ============================== -->
+    <article class="game-card">
+      <svg class="card-icon" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
+        <rect x="0" y="0" width="16" height="16" fill="#0b2a12"/>
+        <g fill="#3f8c39">
+          <rect x="0" y="0" width="16" height="1"/><rect x="0" y="15" width="16" height="1"/>
+          <rect x="0" y="0" width="1" height="16"/><rect x="15" y="0" width="1" height="16"/>
+          <rect x="8" y="1" width="1" height="14"/><rect x="1" y="8" width="14" height="1"/>
+        </g>
+        <!-- white disc, top-left -->
+        <g fill="#dff7da">
+          <rect x="3" y="2" width="3" height="1"/><rect x="2" y="3" width="5" height="3"/><rect x="3" y="6" width="3" height="1"/>
+        </g>
+        <!-- neon disc, bottom-right -->
+        <g fill="#7cff6b">
+          <rect x="10" y="9" width="3" height="1"/><rect x="9" y="10" width="5" height="3"/><rect x="10" y="13" width="3" height="1"/>
+        </g>
+        <!-- legal-move hint, amber outline -->
+        <g fill="#ffcf4a">
+          <rect x="10" y="2" width="3" height="1"/><rect x="9" y="3" width="1" height="3"/>
+          <rect x="13" y="3" width="1" height="3"/><rect x="10" y="6" width="3" height="1"/>
+        </g>
+      </svg>
+      <h3 class="card-title">OTHELLO</h3>
+      <div class="card-tags">
+        <span class="tag tag-port">JAVA → JS PORT</span>
+        <span class="tag tag-ai">MINIMAX</span>
+      </div>
+      <p class="card-blurb">
+        You're black, so you move first. Pick your opponent: a greedy CPU that always
+        grabs the biggest flip, or a minimax AI that looks up to six plies ahead.
+        Legal moves glow yellow.
+      </p>
+      <div class="card-actions">
+        <a class="btn" href="games/othello/index.html">▶ PLAY</a>
+        <button class="popout" data-popout="games/othello/index.html" data-w="760" data-h="880" title="Open in its own window">⧉</button>
+        <a class="popout popout-src" href="source/othello.html">&lt;/&gt; SEE SOURCE</a>
+      </div>
+    </article>
+
+    <!-- =============================== PONG ================================ -->
+    <article class="game-card">
+      <svg class="card-icon" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
+        <g fill="#3f8c39">
+          <rect x="8" y="1" width="1" height="2"/><rect x="8" y="5" width="1" height="2"/>
+          <rect x="8" y="9" width="1" height="2"/><rect x="8" y="13" width="1" height="2"/>
+        </g>
+        <g fill="#7cff6b">
+          <rect x="1" y="5" width="2" height="6"/>
+          <rect x="13" y="3" width="2" height="6"/>
+          <rect x="10" y="9" width="2" height="2"/>
+        </g>
+      </svg>
+      <h3 class="card-title">PONG</h3>
+      <div class="card-tags">
+        <span class="tag tag-port">JAVA → JS PORT</span>
+        <span class="tag">2 MODES</span>
+      </div>
+      <p class="card-blurb">
+        Solo against the wall — three misses and you're out — or first to three against
+        the CPU. Where the ball hits your paddle decides the angle it leaves at.
+        Scroll to move.
+      </p>
+      <div class="card-actions">
+        <a class="btn" href="games/pong/index.html">▶ PLAY</a>
+        <button class="popout" data-popout="games/pong/index.html" data-w="780" data-h="700" title="Open in its own window">⧉</button>
+        <a class="popout popout-src" href="source/pong.html">&lt;/&gt; SEE SOURCE</a>
+      </div>
+    </article>
+
+    <!-- =============================== CHESS =============================== -->
+    <article class="game-card">
+      <svg class="card-icon" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
+        <g fill="#7cff6b">
+          <rect x="2" y="2" width="2" height="2"/><rect x="5" y="2" width="2" height="2"/>
+          <rect x="8" y="2" width="2" height="2"/><rect x="11" y="2" width="2" height="2"/>
+          <rect x="2" y="4" width="11" height="2"/>
+          <rect x="3" y="6" width="9" height="5"/>
+          <rect x="2" y="11" width="11" height="1"/>
+          <rect x="3" y="12" width="9" height="1"/>
+          <rect x="1" y="13" width="13" height="2"/>
+        </g>
+        <g fill="#04060a">
+          <rect x="6" y="7" width="3" height="3"/>
+        </g>
+      </svg>
+      <h3 class="card-title">CHESS</h3>
+      <div class="card-tags">
+        <span class="tag tag-web">BUILT FOR WEB</span>
+        <span class="tag tag-ai">~800 ELO</span>
+      </div>
+      <p class="card-blurb">
+        <em>Fianchetto</em> — full legal-move chess with castling, en passant and
+        promotion. Play a human beside you, or a CPU deliberately calibrated to blunder
+        like a real beginner. Drag or click to move.
+      </p>
+      <div class="card-actions">
+        <a class="btn" href="games/chess/index.html">▶ PLAY</a>
+        <button class="popout" data-popout="games/chess/index.html" data-w="1180" data-h="900" title="Open in its own window">⧉</button>
+        <a class="popout popout-src" href="source/chess.html">&lt;/&gt; SEE SOURCE</a>
+      </div>
+    </article>
+
+  </div>
+
+  <div class="section-head"><h2>BEHIND THE CABINET</h2></div>
+
+  <section class="about">
+    <div class="about-box">
+      <h3>THE PORT</h3>
+      <p>
+        Tic-Tac-Toe, Othello and Pong were written in Java with Swing. Browsers
+        don't run Swing, so each one was rewritten in JavaScript — same rules,
+        same AI, same bounce angles, same off-by-one edge cases fixed the same way.
+        The original <code>.java</code> files are in
+        <a href="java-source/index.html">/java-source</a> if you want to compare.
+      </p>
+    </div>
+    <div class="about-box">
+      <h3>HOW IT MAPS</h3>
+      <ul>
+        <li><code>T3Model</code> → <code>t3-model.js</code></li>
+        <li><code>ButtonGUI</code> / <code>PaintGUI</code> / <code>ConsoleUI</code> → three renderers</li>
+        <li><code>OthelloComputerAndAI</code> → <code>othello-ai.js</code></li>
+        <li><code>PongPanel.paintComponent</code> → a canvas draw loop</li>
+        <li><code>JOptionPane</code> → the game-over modal</li>
+      </ul>
+    </div>
+    <div class="about-box">
+      <h3>THE ODD ONE OUT</h3>
+      <p>
+        Chess never was a Swing program — it was built for the browser from the start,
+        which is why it's the one game with no <code>.java</code> beside it. Rules and
+        move generation come from a vendored copy of
+        <code>chess.js</code>; <code>ai.js</code> runs a shallow minimax and then
+        deliberately throws a quarter of its own analysis away, because a search that
+        always plays its best move is far stronger than 800&nbsp;Elo. Every file is
+        a plain script hanging off <code>window.App</code> — no imports, no build.
+      </p>
+      <p style="margin-top:12px;">
+        <a href="source/chess.html">Read the chess source →</a>
+      </p>
+    </div>
+  </section>
+
+  <section class="source-cta">
+    <h3>WANT TO SEE HOW IT WORKS?</h3>
+    <p>
+      Every file behind all four games is readable right here — the JavaScript that
+      runs in your browser, the HTML and CSS around it, and the original Java Swing
+      code the three ports were translated from. Syntax-highlighted, with line
+      numbers, nothing to download.
+    </p>
+    <a class="btn btn-amber" href="source/index.html">&lt;/&gt; READ ALL THE SOURCE CODE</a>
+  </section>
+
+</main>
+
+<footer class="arcade-footer">
+  <p>© <span id="year">2026</span> — PUSH START TO CONTINUE <span class="blink">_</span></p>
+</footer>
+
+<script src="js/invaders-bg.js"></script>
+<script>
+  document.getElementById("year").textContent = new Date().getFullYear();
+
+  /* "⧉" opens a game in its own right-sized window, the way a cabinet would
+     have its own screen. If the browser blocks the popup we just navigate. */
+  document.querySelectorAll("[data-popout]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var url = btn.getAttribute("data-popout");
+      var w = btn.getAttribute("data-w") || 900;
+      var h = btn.getAttribute("data-h") || 800;
+      var left = Math.max(0, (screen.width - w) / 2);
+      var top = Math.max(0, (screen.height - h) / 2.4);
+      var win = window.open(
+        url, "_blank",
+        "width=" + w + ",height=" + h + ",left=" + left + ",top=" + top + ",resizable=yes,scrollbars=yes"
+      );
+      if (!win) window.location.href = url;
+    });
+  });
+</script>
+</body>
+</html>

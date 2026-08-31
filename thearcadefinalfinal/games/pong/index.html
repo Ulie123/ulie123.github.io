@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PONG — The Arcade</title>
+<link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../css/arcade.css" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<canvas id="bg-invaders" aria-hidden="true"></canvas>
+<div class="bg-grid" aria-hidden="true"></div>
+<div class="bg-vignette" aria-hidden="true"></div>
+<div class="bg-scanlines" aria-hidden="true"></div>
+
+<div class="wrap">
+
+  <div class="shell-bar">
+    <div>
+      <h1 class="shell-title">PONG</h1>
+      <p class="shell-sub">Ported from Java Swing · Mouse wheel controls the paddle</p>
+    </div>
+    <a class="btn btn-pink" href="../../index.html">◀ ARCADE</a>
+  </div>
+
+  <div class="cabinet" data-center>
+
+    <div class="hud">
+      <span class="hud-label">MODE:</span>
+      <button class="btn" type="button" data-pong-mode="solo">SOLO</button>
+      <button class="btn" type="button" data-pong-mode="cpu">VS CPU</button>
+    </div>
+
+    <div class="cabinet-screen">
+      <div class="pong-stage">
+        <div class="attract" id="attract">
+          <h2>PONG</h2>
+          <p>
+            SOLO — KEEP IT ALIVE, 3 MISSES AND OUT<br />
+            VS CPU — FIRST TO 3 POINTS
+          </p>
+          <div class="attract-modes">
+            <button class="btn" type="button" data-pong-mode="solo">▶ SOLO</button>
+            <button class="btn" type="button" data-pong-mode="cpu">▶ VS CPU</button>
+          </div>
+          <p style="color:#2f5a2c;">SELECT A MODE TO START <span class="blink">_</span></p>
+        </div>
+        <canvas id="pong" hidden aria-label="Pong playfield"></canvas>
+      </div>
+    </div>
+
+    <p class="pong-hint" id="hint">
+      Pick a mode above. Where the ball strikes your paddle sets the angle it
+      leaves at — clip the top or bottom edge and it flies off steeply, hit dead
+      centre and it comes straight back.
+    </p>
+  </div>
+</div>
+
+<footer class="arcade-footer">
+  <p><a href="../../index.html">◀ BACK TO THE ARCADE</a></p>
+</footer>
+
+<div class="arcade-modal" id="gameOverModal" hidden>
+  <div class="arcade-modal-box">
+    <p class="arcade-modal-title" id="gameOverTitle">GAME OVER</p>
+    <p class="arcade-modal-sub" id="gameOverSubtitle"></p>
+    <div class="arcade-modal-actions">
+      <button class="btn" type="button" id="playAgainBtn">PLAY AGAIN</button>
+      <button class="btn btn-pink" type="button" id="quitBtn">QUIT</button>
+    </div>
+  </div>
+</div>
+
+<script src="../../js/invaders-bg.js"></script>
+<script src="../../js/center-game.js"></script>
+<script src="js/game-constants.js"></script>
+<script src="js/pong-model.js"></script>
+<script src="js/pong-panel.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
