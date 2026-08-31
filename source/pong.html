@@ -60,7 +60,7 @@
         <span class="src-meta" id="srcMeta"></span>
       </div>
       <div class="src-body">
-<div class="src-pane" id="p0" hidden data-path="games/pong/js/game-constants.js" data-meta="23 LINES">
+<div class="src-pane" id="p0" hidden data-path="games/pong/js/game-constants.js" data-meta="29 LINES">
 <pre class="code"><span class="cl"><span class="c">/* ==========================================================================</span>
 </span><span class="cl"><span class="c">   game-constants.js  —  port of GameConstants.java</span>
 </span><span class="cl"><span class="c">   Every tunable number lives here and nowhere else, same as the original.</span>
@@ -81,7 +81,13 @@
 </span><span class="cl">  SOLO_SCORE_X:      <span class="n">30</span> + <span class="n">20</span>,
 </span><span class="cl">  SOLO_MISSES_X:     <span class="n">30</span> + <span class="n">120</span>,
 </span><span class="cl">  SCORE_Y:           <span class="n">20</span>,
-</span><span class="cl">  CPU_SCORE_OFFSET: <span class="n">100</span>
+</span><span class="cl">  CPU_SCORE_OFFSET: <span class="n">100</span>,
+</span><span class="cl"> 
+</span><span class="cl">  <span class="c">/* Not in GameConstants.java. The Swing version had only a mouse wheel, so</span>
+</span><span class="cl"><span class="c">     it needed no held-button speed. Applied once per 16ms tick while a paddle</span>
+</span><span class="cl"><span class="c">     button is held down: 9px/tick is 1.5x the CPU paddle&#x27;s 6, fast enough to</span>
+</span><span class="cl"><span class="c">     cross the court in about three quarters of a second. */</span>
+</span><span class="cl">  BUTTON_PADDLE_STEP: <span class="n">9</span>
 </span><span class="cl">});
 </span></pre>
 </div>
@@ -293,7 +299,7 @@
 </span><span class="cl">})();
 </span></pre>
 </div>
-<div class="src-pane" id="p2" hidden data-path="games/pong/js/pong-panel.js" data-meta="168 LINES">
+<div class="src-pane" id="p2" hidden data-path="games/pong/js/pong-panel.js" data-meta="224 LINES">
 <pre class="code"><span class="cl"><span class="c">/* ==========================================================================</span>
 </span><span class="cl"><span class="c">   pong-panel.js  —  port of PongPanel.java</span>
 </span><span class="cl"><span class="c">   Owns the canvas, the 16ms tick, the mouse wheel listener and every pixel</span>
@@ -310,8 +316,12 @@
 </span><span class="cl">    <span class="k">this</span>.gameMode = gameMode;
 </span><span class="cl">    <span class="k">this</span>.onGameOver = onGameOver;
 </span><span class="cl">    <span class="k">this</span>.model = <span class="k">new</span> window.PongModel(C.WINDOW_WIDTH, C.WINDOW_HEIGHT, gameMode);
-</span><span class="cl">    <span class="k">this</span>.timer = <span class="k">null</span>;
+</span><span class="cl">    <span class="k">this</span>.raf = <span class="k">null</span>;
+</span><span class="cl">    <span class="k">this</span>.running = <span class="k">false</span>;
+</span><span class="cl">    <span class="k">this</span>.lastFrame = <span class="n">0</span>;
+</span><span class="cl">    <span class="k">this</span>.accumulator = <span class="n">0</span>;
 </span><span class="cl">    <span class="k">this</span>.reported = <span class="k">false</span>;
+</span><span class="cl">    <span class="k">this</span>.held = <span class="n">0</span>;          <span class="c">// -1 up, +1 down, 0 not held — set by the buttons</span>
 </span><span class="cl"> 
 </span><span class="cl">    canvas.width = C.WINDOW_WIDTH;
 </span><span class="cl">    canvas.height = C.WINDOW_HEIGHT;
@@ -329,27 +339,79 @@
 </span><span class="cl">    canvas.addEventListener(<span class="s">&quot;wheel&quot;</span>, <span class="k">this</span>.onWheel, { passive: <span class="k">false</span> });
 </span><span class="cl">  }
 </span><span class="cl"> 
+</span><span class="cl">  <span class="c">/* This was setInterval(TIMER_DELAY), a direct translation of</span>
+</span><span class="cl"><span class="c">     javax.swing.Timer. On a desktop it is fine; on a phone it is why tapping a</span>
+</span><span class="cl"><span class="c">     paddle button could hang for a moment. setInterval fires at a fixed rate</span>
+</span><span class="cl"><span class="c">     whether or not the browser is keeping up, so once a tick costs more than</span>
+</span><span class="cl"><span class="c">     16ms the callbacks queue back to back with no idle gap between them and</span>
+</span><span class="cl"><span class="c">     input events sit in the queue behind them. Measured on a throttled phone,</span>
+</span><span class="cl"><span class="c">     a tap waited ~40ms just to reach its own handler, and the handler itself</span>
+</span><span class="cl"><span class="c">     took 2ms.</span>
+</span><span class="cl"> 
+</span><span class="cl"><span class="c">     requestAnimationFrame instead: the browser schedules it, so it yields</span>
+</span><span class="cl"><span class="c">     between frames and simply skips frames when busy rather than piling up a</span>
+</span><span class="cl"><span class="c">     backlog. Game speed is unchanged because the logic still advances in fixed</span>
+</span><span class="cl"><span class="c">     16ms steps, counted out of an accumulator — pauseTicksRemaining = 60 still</span>
+</span><span class="cl"><span class="c">     means exactly one second, as it did in Java. */</span>
 </span><span class="cl">  PongPanel.prototype.start = <span class="k">function</span> () {
 </span><span class="cl">    <span class="k">var</span> self = <span class="k">this</span>;
 </span><span class="cl">    <span class="k">this</span>.stop();
-</span><span class="cl">    <span class="c">/* javax.swing.Timer(TIMER_DELAY, ...) — a fixed 16ms tick, not a</span>
-</span><span class="cl"><span class="c">       frame-rate-dependent loop, so pauseTicksRemaining still means &quot;one</span>
-</span><span class="cl"><span class="c">       second&quot; exactly as it did in Java. */</span>
-</span><span class="cl">    <span class="k">this</span>.timer = setInterval(<span class="k">function</span> () {
-</span><span class="cl">      self.model.tick();
-</span><span class="cl">      self.paintComponent();
+</span><span class="cl">    <span class="k">this</span>.running = <span class="k">true</span>;
+</span><span class="cl">    <span class="k">this</span>.lastFrame = <span class="n">0</span>;
+</span><span class="cl">    <span class="k">this</span>.accumulator = <span class="n">0</span>;
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">function</span> frame(now) {
+</span><span class="cl">      <span class="k">if</span> (!self.running) <span class="k">return</span>;
+</span><span class="cl">      self.raf = requestAnimationFrame(frame);
+</span><span class="cl"> 
+</span><span class="cl">      <span class="k">if</span> (!self.lastFrame) self.lastFrame = now;
+</span><span class="cl">      <span class="k">var</span> elapsed = now - self.lastFrame;
+</span><span class="cl">      self.lastFrame = now;
+</span><span class="cl"> 
+</span><span class="cl">      <span class="c">/* Cap the catch-up. After a real stall — a backgrounded tab, a garbage</span>
+</span><span class="cl"><span class="c">         collection — replaying every missed tick would block for longer than</span>
+</span><span class="cl"><span class="c">         the stall did. Five is enough to smooth a hiccup and few enough that</span>
+</span><span class="cl"><span class="c">         the frame stays cheap. */</span>
+</span><span class="cl">      self.accumulator = Math.min(self.accumulator + elapsed, C.TIMER_DELAY * <span class="n">5</span>);
+</span><span class="cl"> 
+</span><span class="cl">      <span class="k">var</span> stepped = <span class="k">false</span>;
+</span><span class="cl">      <span class="k">while</span> (self.accumulator &gt;= C.TIMER_DELAY) {
+</span><span class="cl">        self.accumulator -= C.TIMER_DELAY;
+</span><span class="cl"> 
+</span><span class="cl">        <span class="c">/* Held buttons move the paddle on the same clock as everything else,</span>
+</span><span class="cl"><span class="c">           so holding one feels identical whatever the frame rate. Applied</span>
+</span><span class="cl"><span class="c">           before tick() so it still works during the pause between points. */</span>
+</span><span class="cl">        <span class="k">if</span> (self.held) self.model.movePaddle(self.held * C.BUTTON_PADDLE_STEP);
+</span><span class="cl"> 
+</span><span class="cl">        self.model.tick();
+</span><span class="cl">        stepped = <span class="k">true</span>;
+</span><span class="cl">      }
+</span><span class="cl"> 
+</span><span class="cl">      <span class="c">// One paint per frame, however many logic steps that frame covered.</span>
+</span><span class="cl">      <span class="k">if</span> (stepped) self.paintComponent();
 </span><span class="cl"> 
 </span><span class="cl">      <span class="k">if</span> (self.model.gameOver &amp;&amp; !self.reported) {
 </span><span class="cl">        self.reported = <span class="k">true</span>;
 </span><span class="cl">        self.stop();
 </span><span class="cl">        self.onGameOver(self.buildGameOverMessage());
 </span><span class="cl">      }
-</span><span class="cl">    }, C.TIMER_DELAY);
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">this</span>.raf = requestAnimationFrame(frame);
 </span><span class="cl">  };
 </span><span class="cl"> 
 </span><span class="cl">  PongPanel.prototype.stop = <span class="k">function</span> () {
-</span><span class="cl">    <span class="k">if</span> (<span class="k">this</span>.timer) clearInterval(<span class="k">this</span>.timer);
-</span><span class="cl">    <span class="k">this</span>.timer = <span class="k">null</span>;
+</span><span class="cl">    <span class="k">this</span>.running = <span class="k">false</span>;
+</span><span class="cl">    <span class="k">if</span> (<span class="k">this</span>.raf) cancelAnimationFrame(<span class="k">this</span>.raf);
+</span><span class="cl">    <span class="k">this</span>.raf = <span class="k">null</span>;
+</span><span class="cl">    <span class="k">this</span>.held = <span class="n">0</span>;          <span class="c">// never resume with a button still stuck down</span>
+</span><span class="cl">    <span class="k">this</span>.lastFrame = <span class="n">0</span>;
+</span><span class="cl">    <span class="k">this</span>.accumulator = <span class="n">0</span>;
+</span><span class="cl">  };
+</span><span class="cl"> 
+</span><span class="cl">  <span class="c">/* -1 for up, +1 for down, 0 to stop. */</span>
+</span><span class="cl">  PongPanel.prototype.setHeld = <span class="k">function</span> (direction) {
+</span><span class="cl">    <span class="k">this</span>.held = direction;
 </span><span class="cl">  };
 </span><span class="cl"> 
 </span><span class="cl">  PongPanel.prototype.destroy = <span class="k">function</span> () {
@@ -463,7 +525,7 @@
 </span><span class="cl">})();
 </span></pre>
 </div>
-<div class="src-pane" id="p3" hidden data-path="games/pong/js/main.js" data-meta="97 LINES">
+<div class="src-pane" id="p3" hidden data-path="games/pong/js/main.js" data-meta="147 LINES">
 <pre class="code"><span class="cl"><span class="c">/* ==========================================================================</span>
 </span><span class="cl"><span class="c">   main.js  —  port of PongLauncher.java</span>
 </span><span class="cl"><span class="c">   The launcher validated one argument, solo or cpu, and refused to start</span>
@@ -484,12 +546,58 @@
 </span><span class="cl">  <span class="k">var</span> modalSub = document.getElementById(<span class="s">&quot;gameOverSubtitle&quot;</span>);
 </span><span class="cl">  <span class="k">var</span> playAgainBtn = document.getElementById(<span class="s">&quot;playAgainBtn&quot;</span>);
 </span><span class="cl"> 
+</span><span class="cl">  <span class="k">var</span> pad = document.getElementById(<span class="s">&quot;pad&quot;</span>);
+</span><span class="cl">  <span class="k">var</span> padUp = document.getElementById(<span class="s">&quot;padUp&quot;</span>);
+</span><span class="cl">  <span class="k">var</span> padDown = document.getElementById(<span class="s">&quot;padDown&quot;</span>);
+</span><span class="cl"> 
 </span><span class="cl">  <span class="k">var</span> panel = <span class="k">null</span>;
 </span><span class="cl"> 
 </span><span class="cl">  <span class="k">var</span> HINTS = {
-</span><span class="cl">    solo: <span class="s">&quot;Scroll the wheel over the board to move your paddle. Keep the ball alive — three misses and it&#x27;s over.&quot;</span>,
-</span><span class="cl">    cpu:  <span class="s">&quot;Scroll the wheel over the board to move the green paddle. First to three points wins.&quot;</span>
+</span><span class="cl">    solo: <span class="s">&quot;Hold ▲ / ▼ to move your paddle, or scroll the wheel over the board. Keep the ball alive — three misses and it&#x27;s over.&quot;</span>,
+</span><span class="cl">    cpu:  <span class="s">&quot;Hold ▲ / ▼ to move the green paddle, or scroll the wheel over the board. First to three points wins.&quot;</span>
 </span><span class="cl">  };
+</span><span class="cl"> 
+</span><span class="cl">  <span class="c">/* ------------------------------------------------------------ paddle pad</span>
+</span><span class="cl"> 
+</span><span class="cl"><span class="c">     A phone has no wheel, so the buttons are the only way in on mobile; on a</span>
+</span><span class="cl"><span class="c">     desktop they sit alongside the wheel rather than replacing it. Holding one</span>
+</span><span class="cl"><span class="c">     sets a direction that the game loop applies on every 16ms tick, so the</span>
+</span><span class="cl"><span class="c">     paddle glides instead of stepping once per click.</span>
+</span><span class="cl"> 
+</span><span class="cl"><span class="c">     Pointer events cover mouse, touch and pen in one path. The release is</span>
+</span><span class="cl"><span class="c">     bound on the window, not the button, because a finger or cursor that</span>
+</span><span class="cl"><span class="c">     slides off the button mid-hold would otherwise never deliver the &quot;up&quot;</span>
+</span><span class="cl"><span class="c">     and the paddle would run away on its own. */</span>
+</span><span class="cl">  <span class="k">function</span> bindPaddleButton(button, direction) {
+</span><span class="cl">    <span class="k">if</span> (!button) <span class="k">return</span>;
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">function</span> press(e) {
+</span><span class="cl">      e.preventDefault();
+</span><span class="cl">      <span class="k">if</span> (!panel) <span class="k">return</span>;
+</span><span class="cl">      panel.setHeld(direction);
+</span><span class="cl">      button.classList.add(<span class="s">&quot;is-held&quot;</span>);
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    <span class="k">function</span> release() {
+</span><span class="cl">      <span class="k">if</span> (panel) panel.setHeld(<span class="n">0</span>);
+</span><span class="cl">      button.classList.remove(<span class="s">&quot;is-held&quot;</span>);
+</span><span class="cl">    }
+</span><span class="cl"> 
+</span><span class="cl">    button.addEventListener(<span class="s">&quot;pointerdown&quot;</span>, press);
+</span><span class="cl">    button.addEventListener(<span class="s">&quot;contextmenu&quot;</span>, <span class="k">function</span> (e) { e.preventDefault(); });
+</span><span class="cl">    window.addEventListener(<span class="s">&quot;pointerup&quot;</span>, release);
+</span><span class="cl">    window.addEventListener(<span class="s">&quot;pointercancel&quot;</span>, release);
+</span><span class="cl">    window.addEventListener(<span class="s">&quot;blur&quot;</span>, release);
+</span><span class="cl"> 
+</span><span class="cl">    <span class="c">// Keyboard: the buttons are real &lt;button&gt;s, so Enter/Space reach them.</span>
+</span><span class="cl">    button.addEventListener(<span class="s">&quot;keydown&quot;</span>, <span class="k">function</span> (e) {
+</span><span class="cl">      <span class="k">if</span> (e.key === <span class="s">&quot;Enter&quot;</span> || e.key === <span class="s">&quot; &quot;</span>) press(e);
+</span><span class="cl">    });
+</span><span class="cl">    button.addEventListener(<span class="s">&quot;keyup&quot;</span>, release);
+</span><span class="cl">  }
+</span><span class="cl"> 
+</span><span class="cl">  bindPaddleButton(padUp, -<span class="n">1</span>);
+</span><span class="cl">  bindPaddleButton(padDown, <span class="n">1</span>);
 </span><span class="cl"> 
 </span><span class="cl">  <span class="k">function</span> launch(mode) {
 </span><span class="cl">    <span class="k">if</span> (panel) panel.destroy();
@@ -505,6 +613,7 @@
 </span><span class="cl"> 
 </span><span class="cl">    attract.hidden = <span class="k">true</span>;
 </span><span class="cl">    canvas.hidden = <span class="k">false</span>;
+</span><span class="cl">    pad.hidden = <span class="k">false</span>;
 </span><span class="cl">    hint.textContent = HINTS[mode];
 </span><span class="cl"> 
 </span><span class="cl">    modeBtns.forEach(<span class="k">function</span> (b) {
@@ -521,6 +630,9 @@
 </span><span class="cl">  }
 </span><span class="cl"> 
 </span><span class="cl">  <span class="k">function</span> showGameOver(message) {
+</span><span class="cl">    <span class="k">if</span> (panel) panel.setHeld(<span class="n">0</span>);
+</span><span class="cl">    padUp.classList.remove(<span class="s">&quot;is-held&quot;</span>);
+</span><span class="cl">    padDown.classList.remove(<span class="s">&quot;is-held&quot;</span>);
 </span><span class="cl">    modalTitle.textContent = message.title;
 </span><span class="cl">    modalSub.textContent = message.sub;
 </span><span class="cl">    modal.hidden = <span class="k">false</span>;
@@ -562,7 +674,7 @@
 </span><span class="cl">})();
 </span></pre>
 </div>
-<div class="src-pane" id="p4" hidden data-path="games/pong/index.html" data-meta="88 LINES">
+<div class="src-pane" id="p4" hidden data-path="games/pong/index.html" data-meta="93 LINES">
 <pre class="code"><span class="cl">&lt;!DOCTYPE html&gt;
 </span><span class="cl">&lt;html lang=&quot;en&quot;&gt;
 </span><span class="cl">&lt;head&gt;
@@ -588,7 +700,7 @@
 </span><span class="cl">  &lt;div class=&quot;shell-bar&quot;&gt;
 </span><span class="cl">    &lt;div&gt;
 </span><span class="cl">      &lt;h1 class=&quot;shell-title&quot;&gt;PONG&lt;/h1&gt;
-</span><span class="cl">      &lt;p class=&quot;shell-sub&quot;&gt;Ported from Java Swing · Mouse wheel controls the paddle&lt;/p&gt;
+</span><span class="cl">      &lt;p class=&quot;shell-sub&quot;&gt;Ported from Java Swing · Hold the buttons, or scroll the wheel&lt;/p&gt;
 </span><span class="cl">    &lt;/div&gt;
 </span><span class="cl">    &lt;a class=&quot;btn btn-pink&quot; href=&quot;../../index.html&quot;&gt;◀ ARCADE&lt;/a&gt;
 </span><span class="cl">  &lt;/div&gt;
@@ -619,9 +731,14 @@
 </span><span class="cl">      &lt;/div&gt;
 </span><span class="cl">    &lt;/div&gt;
 </span><span class="cl"> 
+</span><span class="cl">    &lt;div class=&quot;pong-pad&quot; id=&quot;pad&quot; hidden&gt;
+</span><span class="cl">      &lt;button class=&quot;pong-pad-btn&quot; id=&quot;padUp&quot; type=&quot;button&quot; aria-label=&quot;Move paddle up&quot;&gt;&amp;#9650;&lt;/button&gt;
+</span><span class="cl">      &lt;button class=&quot;pong-pad-btn&quot; id=&quot;padDown&quot; type=&quot;button&quot; aria-label=&quot;Move paddle down&quot;&gt;&amp;#9660;&lt;/button&gt;
+</span><span class="cl">    &lt;/div&gt;
+</span><span class="cl"> 
 </span><span class="cl">    &lt;p class=&quot;pong-hint&quot; id=&quot;hint&quot;&gt;
 </span><span class="cl">      Pick a mode above. Where the ball strikes your paddle sets the angle it
-</span><span class="cl">      leaves at — clip the top or bottom edge and it flies off steeply, hit dead
+</span><span class="cl">      leaves at &amp;mdash; clip the top or bottom edge and it flies off steeply, hit dead
 </span><span class="cl">      centre and it comes straight back.
 </span><span class="cl">    &lt;/p&gt;
 </span><span class="cl">  &lt;/div&gt;
@@ -652,7 +769,7 @@
 </span><span class="cl">&lt;/html&gt;
 </span></pre>
 </div>
-<div class="src-pane" id="p5" hidden data-path="games/pong/style.css" data-meta="89 LINES">
+<div class="src-pane" id="p5" hidden data-path="games/pong/style.css" data-meta="155 LINES">
 <pre class="code"><span class="cl"><span class="c">/* Pong. Shared chrome comes from ../../css/arcade.css */</span>
 </span><span class="cl"> 
 </span><span class="cl">.pong-stage {
@@ -671,7 +788,16 @@
 </span><span class="cl"><span class="c">   about 620px of window height it stays the full 700. */</span>
 </span><span class="cl">#pong,
 </span><span class="cl">.attract {
-</span><span class="cl">  width: min(<span class="n">700px</span>, <span class="n">100</span>%, calc((<span class="n">100vh</span> - <span class="n">260px</span>) * <span class="n">1.4</span>));
+</span><span class="cl">  <span class="c">/* 270px is the chrome above and below the playfield, paddle buttons</span>
+</span><span class="cl"><span class="c">     included, so the whole cabinet clears a short window. */</span>
+</span><span class="cl">  width: min(<span class="n">700px</span>, <span class="n">100</span>%, calc((<span class="n">100vh</span> - <span class="n">270px</span>) * <span class="n">1.4</span>));
+</span><span class="cl">  <span class="c">/* svh, not vh, wherever it&#x27;s supported. On a phone, tapping near the bottom</span>
+</span><span class="cl"><span class="c">     of the screen makes the browser&#x27;s URL bar slide in or out, which changes</span>
+</span><span class="cl"><span class="c">     what 100vh means -- so the playfield was being resized and the whole page</span>
+</span><span class="cl"><span class="c">     relaid out mid-rally, right when you touched a paddle button. svh is</span>
+</span><span class="cl"><span class="c">     pinned to the viewport with the bar showing and doesn&#x27;t move. The vh line</span>
+</span><span class="cl"><span class="c">     above stays as the fallback for browsers without svh. */</span>
+</span><span class="cl">  width: min(<span class="n">700px</span>, <span class="n">100</span>%, calc((<span class="n">100svh</span> - <span class="n">270px</span>) * <span class="n">1.4</span>));
 </span><span class="cl">}
 </span><span class="cl"> 
 </span><span class="cl">#pong {
@@ -740,6 +866,63 @@
 </span><span class="cl">  margin: <span class="n">18px</span> auto <span class="n">0</span>;
 </span><span class="cl">  max-width: <span class="n">540px</span>;
 </span><span class="cl">  line-height: <span class="n">1.8</span>;
+</span><span class="cl">}
+</span><span class="cl"> 
+</span><span class="cl"><span class="c">/* --------------------------------------------------------------- paddle pad</span>
+</span><span class="cl"> 
+</span><span class="cl"><span class="c">   The Swing original was mouse-wheel only, which leaves a phone with no way to</span>
+</span><span class="cl"><span class="c">   play at all. These do the same job by press-and-hold. Both input routes stay</span>
+</span><span class="cl"><span class="c">   live everywhere -- the wheel still works on a desktop, the buttons work with</span>
+</span><span class="cl"><span class="c">   a mouse too.</span>
+</span><span class="cl"><span class="c">   -------------------------------------------------------------------------- */</span>
+</span><span class="cl"> 
+</span><span class="cl">.pong-pad {
+</span><span class="cl">  display: flex;
+</span><span class="cl">  justify-content: center;
+</span><span class="cl">  gap: <span class="n">14px</span>;
+</span><span class="cl">  margin-top: <span class="n">16px</span>;
+</span><span class="cl">}
+</span><span class="cl"> 
+</span><span class="cl">.pong-pad[hidden] { display: none; }
+</span><span class="cl"> 
+</span><span class="cl">.pong-pad-btn {
+</span><span class="cl">  font-family: <span class="k">var</span>(--pixel);
+</span><span class="cl">  font-size: <span class="n">18px</span>;
+</span><span class="cl">  line-height: <span class="n">1</span>;
+</span><span class="cl">  color: <span class="k">var</span>(--neon);
+</span><span class="cl">  background: #<span class="n">0b1a10</span>;
+</span><span class="cl">  border: <span class="n">2px</span> solid <span class="k">var</span>(--neon-dim);
+</span><span class="cl">  box-shadow: <span class="n">0</span> <span class="n">3px</span> <span class="n">0</span> #<span class="n">051007</span>;
+</span><span class="cl">  <span class="c">/* Comfortably past the 44px minimum for a thumb. */</span>
+</span><span class="cl">  min-width: <span class="n">108px</span>;
+</span><span class="cl">  min-height: <span class="n">56px</span>;
+</span><span class="cl">  cursor: pointer;
+</span><span class="cl">  <span class="c">/* Stops the browser scrolling the page, or firing a synthetic click after a</span>
+</span><span class="cl"><span class="c">     touch, while a button is being held. */</span>
+</span><span class="cl">  touch-action: none;
+</span><span class="cl">  -webkit-user-select: none;
+</span><span class="cl">  user-select: none;
+</span><span class="cl">  -webkit-tap-highlight-color: transparent;
+</span><span class="cl">  transition: background <span class="n">0.1s</span>, border-color <span class="n">0.1s</span>, color <span class="n">0.1s</span>;
+</span><span class="cl">}
+</span><span class="cl"> 
+</span><span class="cl">.pong-pad-btn:hover,
+</span><span class="cl">.pong-pad-btn:focus-visible {
+</span><span class="cl">  border-color: <span class="k">var</span>(--neon);
+</span><span class="cl">  color: <span class="k">var</span>(--neon-hot);
+</span><span class="cl">  outline: none;
+</span><span class="cl">}
+</span><span class="cl"> 
+</span><span class="cl">.pong-pad-btn.is-held {
+</span><span class="cl">  background: <span class="k">var</span>(--neon);
+</span><span class="cl">  color: #<span class="n">04140a</span>;
+</span><span class="cl">  border-color: <span class="k">var</span>(--neon-hot);
+</span><span class="cl">  transform: translateY(<span class="n">2px</span>);
+</span><span class="cl">  box-shadow: <span class="n">0</span> <span class="n">1px</span> <span class="n">0</span> #<span class="n">051007</span>;
+</span><span class="cl">}
+</span><span class="cl"> 
+</span><span class="cl">@media (max-width: <span class="n">560px</span>) {
+</span><span class="cl">  .pong-pad-btn { min-width: <span class="n">0</span>; flex: <span class="n">1</span>; }
 </span><span class="cl">}
 </span></pre>
 </div>
