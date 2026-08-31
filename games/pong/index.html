@@ -23,7 +23,7 @@
   <div class="shell-bar">
     <div>
       <h1 class="shell-title">PONG</h1>
-      <p class="shell-sub">Ported from Java Swing · Mouse wheel controls the paddle</p>
+      <p class="shell-sub">Ported from Java Swing · Hold the buttons, or scroll the wheel</p>
     </div>
     <a class="btn btn-pink" href="../../index.html">◀ ARCADE</a>
   </div>
@@ -54,9 +54,14 @@
       </div>
     </div>
 
+    <div class="pong-pad" id="pad" hidden>
+      <button class="pong-pad-btn" id="padUp" type="button" aria-label="Move paddle up">&#9650;</button>
+      <button class="pong-pad-btn" id="padDown" type="button" aria-label="Move paddle down">&#9660;</button>
+    </div>
+
     <p class="pong-hint" id="hint">
       Pick a mode above. Where the ball strikes your paddle sets the angle it
-      leaves at — clip the top or bottom edge and it flies off steeply, hit dead
+      leaves at &mdash; clip the top or bottom edge and it flies off steeply, hit dead
       centre and it comes straight back.
     </p>
   </div>
