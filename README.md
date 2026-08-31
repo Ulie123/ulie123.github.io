@@ -10,35 +10,6 @@ by side.
 
 ---
 
-## Putting it on GitHub Pages
-
-### Option A — as your main site (`yourname.github.io`)
-
-1. Make a **new public repo** named exactly `yourname.github.io`, where `yourname`
-   is your GitHub username, all lowercase. The name has to match exactly.
-2. Upload everything in this folder to the **root** of that repo — `index.html` must
-   sit at the top level, not inside a subfolder.
-3. **Settings → Pages → Build and deployment.** Source: *Deploy from a branch*.
-   Branch: `main`, folder: `/ (root)`. Save.
-4. Wait a minute or two, then open `https://yourname.github.io`.
-
-From the command line, from inside this folder:
-
-```bash
-git init
-git add .
-git commit -m "The Arcade"
-git branch -M main
-git remote add origin https://github.com/yourname/yourname.github.io.git
-git push -u origin main
-```
-
-### Option B — as a project site
-
-Name the repo anything you like (say `arcade`), push the same way, and turn on Pages
-in Settings. The site lands at `https://yourname.github.io/arcade/`. Every link in
-here is relative, so it works either way with no edits.
-
 ### Running it locally
 
 Just open `index.html` in a browser. No server, no build step, no npm — the whole
