@@ -1,17 +1,15 @@
 /* Tic-Tac-Toe specific styling. Shared chrome comes from ../../css/arcade.css */
 
-:root {
-  /* One number drives the board in every mode. Width only -- like the other
-     boards it holds its size rather than shrinking with window height, and
-     center-game.js scrolls it into the middle of the window instead. */
-  --t3-board: min(450px, 78vw);
-}
+/* The board is capped at 450px but never wider than the space it actually has.
+   100% is the cabinet screen's content width; the old 78vw measured the whole
+   viewport and ignored the frame around it, so on a phone the board overflowed
+   its own border. Height comes from aspect-ratio rather than a second length,
+   so the two can't disagree. */
 
 .t3-stage {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: var(--t3-board);
 }
 
 /* ---------------------------------------------------------------- buttons */
@@ -23,8 +21,8 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   grid-template-rows: repeat(3, minmax(0, 1fr));
   gap: 4px;
-  width: var(--t3-board);
-  height: var(--t3-board);
+  width: min(450px, 100%);
+  aspect-ratio: 1 / 1;
   background: #3f8c39;
   border: 4px solid #3f8c39;
 }
@@ -64,8 +62,9 @@
 /* ------------------------------------------------------------------ paint */
 
 .t3-canvas {
-  width: var(--t3-board);
-  height: var(--t3-board);
+  width: min(450px, 100%);
+  aspect-ratio: 1 / 1;
+  height: auto;
   image-rendering: auto;
   cursor: crosshair;
   border: 2px solid #16301c;
@@ -74,7 +73,10 @@
 /* ---------------------------------------------------------------- console */
 
 .t3-terminal {
-  width: min(450px, 88vw);
+  width: min(450px, 100%);
+  /* Roughly a board's worth of height, so switching front ends mid-game
+     doesn't make the cabinet jump. */
+  min-height: 340px;
   background: #030805;
   border: 2px solid #16301c;
   padding: 18px;
