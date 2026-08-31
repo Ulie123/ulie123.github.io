@@ -11,9 +11,11 @@
   grid-template-columns: repeat(8, minmax(0, 1fr));
   grid-template-rows: repeat(8, minmax(0, 1fr));
   gap: 2px;
-  /* Width only -- the board holds its size rather than shrinking with the
-     window. center-game.js scrolls it into view instead. */
-  width: min(520px, 84vw);
+  /* 100%, not 84vw. vw is the whole viewport, which knows nothing about the
+     cabinet's border and padding around this board -- on a phone that came to
+     ~80px the board didn't know it had lost, so it rendered straight through
+     the frame. 100% is the screen's actual content width. */
+  width: min(520px, 100%);
   aspect-ratio: 1 / 1;
   margin: 0 auto;
   background: #1e4a24;
