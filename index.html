@@ -23,7 +23,7 @@
   <div class="wrap">
     <div class="marquee">
       <h1>
-        THE
+        <span class="line1">THE</span>
         <span class="line2">ARCADE</span>
       </h1>
     </div>
@@ -244,6 +244,57 @@
 <script src="js/invaders-bg.js"></script>
 <script>
   document.getElementById("year").textContent = new Date().getFullYear();
+
+  /* --- optically centre the marquee lettering --------------------------
+     Press Start 2P draws each glyph in the LEFT part of its 1em cell and
+     leaves the whole inter-character gap on the right. So the last letter of
+     a line carries a trailing gap with nothing balancing it on the left. The
+     browser centres the advance box, not the ink, which lands the visible
+     letters a few pixels left of centre — about 9px at the title's 46px, and
+     a different amount on each line because the two are different sizes.
+     letter-spacing adds a little more of the same, for the same reason.
+
+     Rather than hard-code an offset for one typeface, measure the ink of
+     whatever font actually loaded and shift each line by the difference.
+     A font with balanced side bearings measures ~0 and nothing moves. */
+  (function opticallyCentreMarquee() {
+    var lines = document.querySelectorAll(".marquee h1 > span");
+    if (!lines.length) return;
+
+    var ctx;
+    try { ctx = document.createElement("canvas").getContext("2d"); } catch (e) { return; }
+    if (!ctx) return;
+
+    function centre(el) {
+      var cs = getComputedStyle(el);
+      var text = (el.textContent || "").trim();
+      if (!text) return;
+
+      ctx.font = cs.fontStyle + " " + cs.fontWeight + " " + cs.fontSize + " " + cs.fontFamily;
+      if ("letterSpacing" in ctx) ctx.letterSpacing = cs.letterSpacing;
+
+      var m = ctx.measureText(text);
+      // Old browsers don't report ink metrics; leave the text where it is.
+      if (typeof m.actualBoundingBoxRight !== "number") return;
+
+      // Advance box spans [0, m.width]; ink spans [-abbLeft, +abbRight].
+      var shift = m.width / 2 + (m.actualBoundingBoxLeft - m.actualBoundingBoxRight) / 2;
+
+      // Sanity guard: a correction bigger than one em means the measurement
+      // went wrong, so do nothing rather than something visibly worse.
+      if (!isFinite(shift) || Math.abs(shift) > parseFloat(cs.fontSize)) return;
+
+      el.style.transform = "translateX(" + shift.toFixed(2) + "px)";
+    }
+
+    function run() { Array.prototype.forEach.call(lines, centre); }
+
+    run();
+    // Re-measure once the webfont has actually swapped in, and on resize,
+    // because the title's font-size is a vw-based clamp().
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(run);
+    window.addEventListener("resize", run);
+  })();
 
   /* "⧉" opens a game in its own right-sized window, the way a cabinet would
      have its own screen. If the browser blocks the popup we just navigate. */
